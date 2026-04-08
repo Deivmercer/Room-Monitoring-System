@@ -5,12 +5,20 @@
 
 #define POTENTIOMETER A0
 #define DHTPIN D1
-#define DHTTYPE DHT11
 #define TEMPERATURE_LED D2
+#define BUTTON D3
+#define DHTTYPE DHT11
 
 void toggleDhtReadFlag();
 void readDht();
 void printWiFiSignalStrength();
+
+enum State
+{
+    NORMAL,
+    CONFIG_TEMPERATURE,
+    CONFIG_SIGNAL_STRENGTH
+};
 
 DHT dht = DHT(DHTPIN, DHTTYPE);
 
@@ -27,6 +35,10 @@ WiFiClient client;
 Ticker updateDataTicker;
 bool updateData = false;
 
+State state;
+float temperatureThreshold = 27.0;
+int signalStrengthThreshold = 65;
+
 void setup()
 {
     dht.begin();
@@ -34,17 +46,22 @@ void setup()
     WiFi.mode(WIFI_STA);
     WiFi.setPhyMode(WIFI_PHY_MODE_11G);
 
-    Serial.begin(115200);
-
     updateDataTicker.attach(5.0, toggleDhtReadFlag);
 
     pinMode(TEMPERATURE_LED, OUTPUT);
     digitalWrite(TEMPERATURE_LED, HIGH);
+
+    pinMode(BUTTON, INPUT_PULLUP);
+
+    state = NORMAL;
+
+    Serial.begin(115200);
 }
 
 void loop()
 {
     static unsigned int potentiometerValue;
+    static bool waitButtonReleased = false;
 
     if (WiFi.status() != WL_CONNECTED)
     {
@@ -85,6 +102,30 @@ void loop()
         }
         Serial.println();
     }
+
+    byte buttonState = digitalRead(BUTTON);
+    if (buttonState == LOW && !waitButtonReleased)
+    {
+        switch (state)
+        {
+            case NORMAL:
+                state = CONFIG_TEMPERATURE;
+                Serial.println(F("New state: CONFIG_TEMPERATURE"));
+                break;
+            case CONFIG_TEMPERATURE:
+                state = CONFIG_SIGNAL_STRENGTH;
+                Serial.println(F("New state: CONFIG_SIGNAL_STRENGTH"));
+                break;
+            case CONFIG_SIGNAL_STRENGTH:
+                state = NORMAL;
+                Serial.println(F("New state: NORMAL"));
+                break;
+            default:
+                Serial.println(F("Unknown state"));
+        }
+        waitButtonReleased = true;
+    } else if (buttonState == HIGH && waitButtonReleased)
+        waitButtonReleased = false;
 
     if (!updateData)
         return;
