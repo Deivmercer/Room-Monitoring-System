@@ -111,6 +111,7 @@ void loop()
             case NORMAL:
                 state = CONFIG_TEMPERATURE;
                 Serial.println(F("New state: CONFIG_TEMPERATURE"));
+                digitalWrite(TEMPERATURE_LED, HIGH);
                 break;
             case CONFIG_TEMPERATURE:
                 state = CONFIG_SIGNAL_STRENGTH;
@@ -127,16 +128,32 @@ void loop()
     } else if (buttonState == HIGH && waitButtonReleased)
         waitButtonReleased = false;
 
-    if (!updateData)
-        return;
-
-    potentiometerValue = analogRead(POTENTIOMETER);
-    Serial.print(F("Potentiometer value: "));
-    Serial.println(potentiometerValue);
-
-    readDht();
-    printWiFiSignalStrength();
-    updateData = false;
+    switch (state)
+    {
+        case NORMAL:
+            if (!updateData)
+                break;
+            readDht();
+            printWiFiSignalStrength();
+            updateData = false;
+            break;
+        case CONFIG_TEMPERATURE:
+            potentiometerValue = analogRead(POTENTIOMETER);
+            temperatureThreshold = linearMapPotentiometerf(potentiometerValue, -15.0, 50.0);
+            Serial.print(F("New temperature threshold: "));
+            Serial.print(temperatureThreshold);
+            Serial.println(F("°C"));
+            break;
+        case CONFIG_SIGNAL_STRENGTH:
+            potentiometerValue = analogRead(POTENTIOMETER);
+            signalStrengthThreshold = linearMapPotentiometer(potentiometerValue, 0, -100);
+            Serial.print(F("New signal strength threshold: "));
+            Serial.print(signalStrengthThreshold);
+            Serial.println(F("dbm"));
+            break;
+        default:
+            Serial.println(F("Unknown state"));
+    }
 }
 
 void toggleDhtReadFlag()
@@ -160,10 +177,18 @@ void readDht()
     Serial.print(heatIndex);
     Serial.println(F("°C"));
 
-    if (heatIndex > 24.0)
+    if (heatIndex > temperatureThreshold)
+    {
+        Serial.print(F("LED on; threshold: "));
+        Serial.println(temperatureThreshold);
         digitalWrite(TEMPERATURE_LED, LOW);
+    }
     else
+    {
+        Serial.println(F("LED off"));
         digitalWrite(TEMPERATURE_LED, HIGH);
+    }
+        
 }
 
 void printWiFiSignalStrength()
@@ -171,4 +196,14 @@ void printWiFiSignalStrength()
     Serial.print(F("Signal strength (RSSI): "));
     Serial.print(WiFi.RSSI());
     Serial.println(" dBm");
+}
+
+int linearMapPotentiometer(int value, int min, int max)
+{
+    return (int) linearMapPotentiometerf(value, min, max);
+}
+
+float linearMapPotentiometerf(int value, float min, float max)
+{
+    return min + (value - 1) * (max - min) / (1024 - 1);
 }
