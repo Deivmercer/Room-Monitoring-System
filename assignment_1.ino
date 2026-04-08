@@ -3,6 +3,7 @@
 #include <Ticker.h>
 #include "secrets.h"
 
+#define POTENTIOMETER A0
 #define DHTPIN D1
 #define DHTTYPE DHT11
 #define TEMPERATURE_LED D2
@@ -43,6 +44,8 @@ void setup()
 
 void loop()
 {
+    static unsigned int potentiometerValue;
+
     if (WiFi.status() != WL_CONNECTED)
     {
         Serial.print(F("Connecting to SSID: "));
@@ -79,12 +82,16 @@ void loop()
                     delay(250);
                     break;
             }
-        }g
+        }
         Serial.println();
     }
 
     if (!updateData)
         return;
+
+    potentiometerValue = analogRead(POTENTIOMETER);
+    Serial.print(F("Potentiometer value: "));
+    Serial.println(potentiometerValue);
 
     readDht();
     printWiFiSignalStrength();
