@@ -1,6 +1,8 @@
 #include <DHT.h>
 #include <ESP8266WiFi.h>
 #include <Ticker.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
 #include "assignment_1.h"
 
 char ssid[] = SECRET_SSID;
@@ -15,6 +17,8 @@ WiFiClient client;
 
 DHT dht = DHT(DHTPIN, DHTTYPE);
 
+LiquidCrystal_I2C lcd(DISPLAY_ADDR, DISPLAY_CHARS, DISPLAY_LINES);
+
 Ticker updateDataTicker;
 bool updateData = false;
 
@@ -22,6 +26,8 @@ State state;
 
 float temperatureThreshold = 27.0;
 int signalStrengthThreshold = 65;
+float lastTemperature = 0;
+int lastSignalStrength = 0;
 
 void setup()
 {
@@ -29,6 +35,24 @@ void setup()
 
     WiFi.mode(WIFI_STA);
     WiFi.setPhyMode(WIFI_PHY_MODE_11G);
+
+    // Initializing the LCD display
+    Wire.begin();
+    Wire.beginTransmission(DISPLAY_ADDR);
+    byte error = Wire.endTransmission();
+    if (error == 0) {
+        Serial.println(F("LCD found."));
+        lcd.begin(DISPLAY_CHARS, 2);
+        lcd.setBacklight(255);
+        lcd.home();
+        lcd.clear();
+        lcd.print("Setup in");
+        lcd.setCursor(0, 1);
+        lcd.print("progress...");
+    } else {
+        Serial.print(F("LCD not found. Error "));
+        Serial.println(error);
+    }
 
     // Initializing ticker
     updateDataTicker.attach(5.0, toggleReadingFlag);
@@ -63,35 +87,21 @@ void loop()
     } else if (buttonState == HIGH && waitButtonReleased)
         waitButtonReleased = false;
 
-    int potentiometerValue;
     switch (state)
     {
         case NORMAL:
             if (!updateData)
                 break;
             readDht();
-            printWiFiSignalStrength();
+            lastSignalStrength = WiFi.RSSI();
+            updateDisplay();
             updateData = false;
             break;
         case CONFIG_TEMPERATURE:
-            potentiometerValue = analogRead(POTENTIOMETER);
-            // Mapping the potentiometer value between TEMPERATURE_THRESHOLD_MIN and TEMPERATURE_THRESHOLD_MAX
-            temperatureThreshold = linearMapPotentiometerf(potentiometerValue,
-                                                           TEMPERATURE_THRESHOLD_MIN,
-                                                           TEMPERATURE_THRESHOLD_MAX);
-            Serial.print(F("New temperature threshold: "));
-            Serial.print(temperatureThreshold);
-            Serial.println(F("°C"));
+            configureTemperatureThreshold();
             break;
         case CONFIG_SIGNAL_STRENGTH:
-            potentiometerValue = analogRead(POTENTIOMETER);
-            // Mapping the potentiometer value between SIGNAL_STRENGTH_THRESHOLD_MIN and SIGNAL_STRENGTH_THRESHOLD_MAX
-            signalStrengthThreshold = linearMapPotentiometer(potentiometerValue,
-                                                             SIGNAL_STRENGTH_THRESHOLD_MIN,
-                                                             SIGNAL_STRENGTH_THRESHOLD_MAX);
-            Serial.print(F("New signal strength threshold: "));
-            Serial.print(signalStrengthThreshold);
-            Serial.println(F("dbm"));
+            configureSignalStrengthThreshold();
             break;
         default:
             Serial.println(F("Unknown state"));
@@ -145,12 +155,14 @@ void updateState()
         case NORMAL:
             state = CONFIG_TEMPERATURE;
             digitalWrite(TEMPERATURE_LED, HIGH);
+            lcd.clear();
             break;
         case CONFIG_TEMPERATURE:
             state = CONFIG_SIGNAL_STRENGTH;
             break;
         case CONFIG_SIGNAL_STRENGTH:
             state = NORMAL;
+            lcd.clear();
             break;
         default:
             Serial.println(F("Unknown state"));
@@ -174,9 +186,7 @@ void readDht()
     }
 
     float heatIndex = dht.computeHeatIndex(temperature, humidity, false);
-    Serial.print(F("Perceived temperature: "));
-    Serial.print(heatIndex);
-    Serial.println(F("°C"));
+    lastTemperature = heatIndex;
 
     if (heatIndex > temperatureThreshold)
         digitalWrite(TEMPERATURE_LED, LOW);
@@ -184,11 +194,52 @@ void readDht()
         digitalWrite(TEMPERATURE_LED, HIGH);
 }
 
-void printWiFiSignalStrength()
+void updateDisplay()
 {
-    Serial.print(F("Signal strength (RSSI): "));
-    Serial.print(WiFi.RSSI());
-    Serial.println(" dBm");
+    lcd.setCursor(0, 0);
+    lcd.print("T: ");
+    char buffer[6];
+    snprintf(buffer, sizeof(buffer), "%.1f", lastTemperature);
+    lcd.print(buffer);
+    lcd.print(" C ");
+    lcd.setCursor(0, 1);
+    lcd.print("WiFi: ");
+    lcd.print(lastSignalStrength);
+    lcd.print(" dBm");
+}
+
+void configureTemperatureThreshold()
+{
+    int potentiometerValue = analogRead(POTENTIOMETER);
+
+    // Mapping the potentiometer value between TEMPERATURE_THRESHOLD_MIN and TEMPERATURE_THRESHOLD_MAX
+    temperatureThreshold = linearMapPotentiometerf(potentiometerValue,
+                                                    TEMPERATURE_THRESHOLD_MIN,
+                                                    TEMPERATURE_THRESHOLD_MAX);
+    lcd.setCursor(0, 0);
+    lcd.print("Temperature");
+    lcd.setCursor(0, 1);
+    lcd.print("thres.: ");
+    char buffer[6];
+    snprintf(buffer, sizeof(buffer), "%.1f", temperatureThreshold);
+    lcd.print(buffer);
+    lcd.print(" C");
+}
+
+void configureSignalStrengthThreshold()
+{
+    int potentiometerValue = analogRead(POTENTIOMETER);
+
+    // Mapping the potentiometer value between SIGNAL_STRENGTH_THRESHOLD_MIN and SIGNAL_STRENGTH_THRESHOLD_MAX
+    signalStrengthThreshold = linearMapPotentiometer(potentiometerValue,
+                                                        SIGNAL_STRENGTH_THRESHOLD_MIN,
+                                                        SIGNAL_STRENGTH_THRESHOLD_MAX);
+    lcd.setCursor(0, 0);
+    lcd.print("WiFi signal");
+    lcd.setCursor(0, 1);
+    lcd.print("thres.: -");
+    lcd.print(signalStrengthThreshold);
+    lcd.print(" dBm");
 }
 
 int linearMapPotentiometer(int value, int min, int max)
