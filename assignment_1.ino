@@ -3,6 +3,7 @@
 #include <Ticker.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+#include <ESP8266WebServer.h>
 #include "assignment_1.h"
 
 char ssid[] = SECRET_SSID;
@@ -14,6 +15,8 @@ IPAddress dns(DNS);
 IPAddress gateway(GATEWAY);
 #endif
 WiFiClient client;
+
+ESP8266WebServer server(80);
 
 DHT dht = DHT(DHTPIN, DHTTYPE);
 
@@ -69,6 +72,11 @@ void setup()
     // Init system state
     state = NORMAL;
 
+    // Configuring server routes
+    server.on("/", handleRoot);
+    server.onNotFound(handleNotFound);
+    server.begin();
+
     Serial.begin(115200);
 }
 
@@ -113,11 +121,15 @@ void loop()
     }
 
     updateLEDs();
+
+    // Listening for clients on port 80
+    server.handleClient();
 }
 
 void connectToWiFi()
 {
-    Serial.print(F("Connecting to SSID: "));
+    lcd.clear();
+    Serial.print(F("\nConnecting to SSID: "));
     Serial.println(SECRET_SSID);
 
 #ifdef IP
@@ -156,7 +168,11 @@ void connectToWiFi()
                 break;
         }
     }
+
     Serial.println();
+    printToLCD("Connected. IP:", WiFi.localIP().toString());
+    delay(5000);
+    lcd.clear();
 }
 
 void updateState()
@@ -307,7 +323,7 @@ void updateLEDs()
         digitalWrite(SIGNAL_STRENGTH_LED, HIGH);
 }
 
-void printToLCD(const char* displayLine1, const char* displayLine2)
+void printToLCD(String displayLine1, String displayLine2)
 {
     lcd.setCursor(0, 0);
     lcd.print(displayLine1);
@@ -323,4 +339,37 @@ int linearMapPotentiometer(int value, int min, int max)
 float linearMapPotentiometerf(int value, float min, float max)
 {
     return min + (value - POTENTIOMETER_MIN) * (max - min) / (POTENTIOMETER_MAX - POTENTIOMETER_MIN);
+}
+
+void handleRoot()
+{
+    String html = F(
+        "<!DOCTYPE html>\n"
+        "<html>\n"
+            "<head>\n"
+                "<meta http-equiv=\"refresh\" content=\"30\" name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\">\n"
+                "<title>Dashboard</title>\n"
+                "<style>\n"
+                    "html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}\n"
+                    "body{margin-top: 50px;} h1 {color: #444444;margin: 50px auto 30px;} h3 {color: #444444;margin-bottom: 50px;}\n"
+                    "p {font-size: 14px;color: #888;margin-bottom: 10px;}\n"
+                "</style>\n"
+            "</head>\n"
+            "<body>\n"
+                "<h1>Values:</h1>\n");
+
+    html += F("<p>Temperature: ") + String(lastTemperature) + F(" &deg;C<p>\n");
+    html += F("<p>Humidity: ") + String(lastHumidity) + F("%<p>\n");
+    html += F("<p>WiFi signal strength: ") + String(lastSignalStrength) + F(" dBm<p>\n");
+
+    html += F(
+            "</body>\n"
+        "</html>\n");
+
+    server.send(200, F("text/html"), html);
+}
+
+void handleNotFound()
+{
+    server.send(404, F("text/plain"), F("Not found"));
 }

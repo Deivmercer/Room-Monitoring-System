@@ -31,7 +31,9 @@ void configureLowTemperatureThreshold();
 void configureHighTemperatureThreshold();
 void configureSignalStrengthThreshold();
 void updateLEDs();
-void printToLCD(const char* displayLine1, const char* displayLine2);
+void printToLCD(String displayLine1, String displayLine2);
+void handleRoot();
+void handleNotFound();
 
 enum State
 {
