@@ -24,8 +24,9 @@ bool updateData = false;
 
 State state;
 
-float temperatureThreshold = 27.0;
-int signalStrengthThreshold = 65;
+float lowTemperatureThreshold = -1.0;
+float highTemperatureThreshold = 27.0;
+int signalStrengthThreshold = -65;
 float lastTemperature = 0;
 int lastSignalStrength = 0;
 
@@ -58,11 +59,15 @@ void setup()
     updateDataTicker.attach(5.0, toggleReadingFlag);
 
     // Setting pins
-    pinMode(TEMPERATURE_LED, OUTPUT);
+    pinMode(SIGNAL_STRENGTH_LED, OUTPUT);
+    pinMode(HIGH_TEMPERATURE_LED, OUTPUT);
+    pinMode(LOW_TEMPERATURE_LED, OUTPUT);
     pinMode(BUTTON, INPUT_PULLUP);
 
     // Turning LED off
-    digitalWrite(TEMPERATURE_LED, HIGH);
+    digitalWrite(SIGNAL_STRENGTH_LED, HIGH);
+    digitalWrite(HIGH_TEMPERATURE_LED, LOW);
+    digitalWrite(LOW_TEMPERATURE_LED, LOW);
 
     // Init system state
     state = NORMAL;
@@ -97,8 +102,11 @@ void loop()
             updateDisplay();
             updateData = false;
             break;
-        case CONFIG_TEMPERATURE:
-            configureTemperatureThreshold();
+        case CONFIG_LOW_TEMPERATURE:
+            configureLowTemperatureThreshold();
+            break;
+        case CONFIG_HIGH_TEMPERATURE:
+            configureHighTemperatureThreshold();
             break;
         case CONFIG_SIGNAL_STRENGTH:
             configureSignalStrengthThreshold();
@@ -106,6 +114,8 @@ void loop()
         default:
             Serial.println(F("Unknown state"));
     }
+
+    updateLEDs();
 }
 
 void connectToWiFi()
@@ -153,12 +163,26 @@ void updateState()
     switch (state)
     {
         case NORMAL:
-            state = CONFIG_TEMPERATURE;
-            digitalWrite(TEMPERATURE_LED, HIGH);
+            state = CONFIG_LOW_TEMPERATURE;
+            digitalWrite(SIGNAL_STRENGTH_LED, HIGH);
             lcd.clear();
             break;
-        case CONFIG_TEMPERATURE:
-            state = CONFIG_SIGNAL_STRENGTH;
+        case CONFIG_LOW_TEMPERATURE:
+            state = CONFIG_HIGH_TEMPERATURE;
+            break;
+        case CONFIG_HIGH_TEMPERATURE:
+            if (lowTemperatureThreshold >= highTemperatureThreshold)
+            {
+                printError("ERROR:low thres", "higher than high");
+                delay(2000);
+                lcd.clear();
+                state = CONFIG_LOW_TEMPERATURE;
+            }
+            else
+            {
+                state = CONFIG_SIGNAL_STRENGTH;
+                lcd.clear();
+            }
             break;
         case CONFIG_SIGNAL_STRENGTH:
             state = NORMAL;
@@ -187,11 +211,6 @@ void readDht()
 
     float heatIndex = dht.computeHeatIndex(temperature, humidity, false);
     lastTemperature = heatIndex;
-
-    if (heatIndex > temperatureThreshold)
-        digitalWrite(TEMPERATURE_LED, LOW);
-    else
-        digitalWrite(TEMPERATURE_LED, HIGH);
 }
 
 void updateDisplay()
@@ -208,22 +227,40 @@ void updateDisplay()
     lcd.print(" dBm");
 }
 
-void configureTemperatureThreshold()
+void configureLowTemperatureThreshold()
 {
     int potentiometerValue = analogRead(POTENTIOMETER);
 
     // Mapping the potentiometer value between TEMPERATURE_THRESHOLD_MIN and TEMPERATURE_THRESHOLD_MAX
-    temperatureThreshold = linearMapPotentiometerf(potentiometerValue,
-                                                    TEMPERATURE_THRESHOLD_MIN,
-                                                    TEMPERATURE_THRESHOLD_MAX);
+    lowTemperatureThreshold = linearMapPotentiometerf(potentiometerValue,
+                                                      TEMPERATURE_THRESHOLD_MIN,
+                                                      TEMPERATURE_THRESHOLD_MAX);
     lcd.setCursor(0, 0);
-    lcd.print("Temperature");
+    lcd.print("Low temperature");
     lcd.setCursor(0, 1);
     lcd.print("thres.: ");
     char buffer[6];
-    snprintf(buffer, sizeof(buffer), "%.1f", temperatureThreshold);
+    snprintf(buffer, sizeof(buffer), "%.1f", lowTemperatureThreshold);
     lcd.print(buffer);
-    lcd.print(" C");
+    lcd.print(" C ");
+}
+
+void configureHighTemperatureThreshold()
+{
+    int potentiometerValue = analogRead(POTENTIOMETER);
+
+    // Mapping the potentiometer value between TEMPERATURE_THRESHOLD_MIN and TEMPERATURE_THRESHOLD_MAX
+    highTemperatureThreshold = linearMapPotentiometerf(potentiometerValue,
+                                                       TEMPERATURE_THRESHOLD_MIN,
+                                                       TEMPERATURE_THRESHOLD_MAX);
+    lcd.setCursor(0, 0);
+    lcd.print("High temperature");
+    lcd.setCursor(0, 1);
+    lcd.print("thres.: ");
+    char buffer[6];
+    snprintf(buffer, sizeof(buffer), "%.1f", highTemperatureThreshold);
+    lcd.print(buffer);
+    lcd.print(" C ");
 }
 
 void configureSignalStrengthThreshold()
@@ -232,14 +269,46 @@ void configureSignalStrengthThreshold()
 
     // Mapping the potentiometer value between SIGNAL_STRENGTH_THRESHOLD_MIN and SIGNAL_STRENGTH_THRESHOLD_MAX
     signalStrengthThreshold = linearMapPotentiometer(potentiometerValue,
-                                                        SIGNAL_STRENGTH_THRESHOLD_MIN,
-                                                        SIGNAL_STRENGTH_THRESHOLD_MAX);
+                                                     SIGNAL_STRENGTH_THRESHOLD_MIN,
+                                                     SIGNAL_STRENGTH_THRESHOLD_MAX);
     lcd.setCursor(0, 0);
     lcd.print("WiFi signal");
     lcd.setCursor(0, 1);
-    lcd.print("thres.: -");
+    lcd.print("thres.: ");
     lcd.print(signalStrengthThreshold);
     lcd.print(" dBm");
+}
+
+void updateLEDs()
+{
+    if (lastTemperature <= lowTemperatureThreshold)
+    {
+        digitalWrite(HIGH_TEMPERATURE_LED, LOW);
+        digitalWrite(LOW_TEMPERATURE_LED, HIGH);
+    }
+    else if (lastTemperature >= highTemperatureThreshold)
+    {
+        digitalWrite(HIGH_TEMPERATURE_LED, HIGH);
+        digitalWrite(LOW_TEMPERATURE_LED, LOW);
+    }
+    else
+    {
+        digitalWrite(HIGH_TEMPERATURE_LED, LOW);
+        digitalWrite(LOW_TEMPERATURE_LED, LOW);
+    }
+
+    if (lastSignalStrength < signalStrengthThreshold)
+        digitalWrite(SIGNAL_STRENGTH_LED, LOW);
+    else
+        digitalWrite(SIGNAL_STRENGTH_LED, HIGH);
+}
+
+void printError(const char* displayLine1, const char* displayLine2)
+{
+    lcd.setCursor(0, 0);
+    lcd.print(displayLine1);
+    lcd.setCursor(0, 1);
+    lcd.print(displayLine2);
 }
 
 int linearMapPotentiometer(int value, int min, int max)

@@ -4,8 +4,10 @@
 #define DISPLAY_SCL D1
 #define DISPLAY_SDA D2
 #define DHTPIN D3
-#define TEMPERATURE_LED D5
+#define SIGNAL_STRENGTH_LED D5
 #define BUTTON D6
+#define HIGH_TEMPERATURE_LED D7
+#define LOW_TEMPERATURE_LED D8
 
 #define DHTTYPE DHT11
 
@@ -18,19 +20,23 @@
 #define TEMPERATURE_THRESHOLD_MIN -15.0
 #define TEMPERATURE_THRESHOLD_MAX 50.0
 #define SIGNAL_STRENGTH_THRESHOLD_MIN 0
-#define SIGNAL_STRENGTH_THRESHOLD_MAX 100
+#define SIGNAL_STRENGTH_THRESHOLD_MAX -100
 
 void connectToWiFi();
 void updateState();
 void toggleReadingFlag();
 void readDht();
 void updateDisplay();
-void configureTemperatureThreshold();
+void configureLowTemperatureThreshold();
+void configureHighTemperatureThreshold();
 void configureSignalStrengthThreshold();
+void updateLEDs();
+void printError(const char* displayLine1, const char* displayLine2);
 
 enum State
 {
     NORMAL,
-    CONFIG_TEMPERATURE,
+    CONFIG_LOW_TEMPERATURE,
+    CONFIG_HIGH_TEMPERATURE,
     CONFIG_SIGNAL_STRENGTH
 };
