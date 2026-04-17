@@ -31,7 +31,7 @@ void configureLowTemperatureThreshold();
 void configureHighTemperatureThreshold();
 void configureSignalStrengthThreshold();
 void updateLEDs();
-void printError(const char* displayLine1, const char* displayLine2);
+void printToLCD(const char* displayLine1, const char* displayLine2);
 
 enum State
 {

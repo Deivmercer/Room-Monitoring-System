@@ -27,6 +27,7 @@ State state;
 float lowTemperatureThreshold = -1.0;
 float highTemperatureThreshold = 27.0;
 int signalStrengthThreshold = -65;
+float lastHumidity = 0;
 float lastTemperature = 0;
 int lastSignalStrength = 0;
 
@@ -46,10 +47,6 @@ void setup()
         lcd.begin(DISPLAY_CHARS, 2);
         lcd.setBacklight(255);
         lcd.home();
-        lcd.clear();
-        lcd.print("Setup in");
-        lcd.setCursor(0, 1);
-        lcd.print("progress...");
     } else {
         Serial.print(F("LCD not found. Error "));
         Serial.println(error);
@@ -112,7 +109,7 @@ void loop()
             configureSignalStrengthThreshold();
             break;
         default:
-            Serial.println(F("Unknown state"));
+            Serial.println(F("ERROR: Unknown state"));
     }
 
     updateLEDs();
@@ -133,23 +130,27 @@ void connectToWiFi()
         switch(WiFi.status())
         {
             case WL_NO_SSID_AVAIL:
-                Serial.println(F("\nSSID not in range"));
+                printToLCD("SSID not in", "range. Retrying");
                 delay(5000);
+                lcd.clear();
                 break;
             case WL_CONNECT_FAILED:
-                Serial.println(F("\nWiFi connection failed!"));
+                printToLCD("WiFi connection", "failed. Retrying");
                 delay(5000);
+                lcd.clear();
                 break;
             case WL_WRONG_PASSWORD:
-                Serial.println(F("WiFi password is wrong!"));
+                printToLCD("WiFi password", "is wrong.");
                 while(true)
                     delay(100);
                 break;
             case WL_CONNECTION_LOST:
-                Serial.println(F("\nWiFi connection lost!"));
+                printToLCD("WiFi connection", "lost");
                 delay(250);
+                lcd.clear();
                 break;
             default:
+                printToLCD("Setup in", "progress...");
                 Serial.print(F("."));
                 delay(250);
                 break;
@@ -173,7 +174,7 @@ void updateState()
         case CONFIG_HIGH_TEMPERATURE:
             if (lowTemperatureThreshold >= highTemperatureThreshold)
             {
-                printError("ERROR:low thres", "higher than high");
+                printToLCD("ERROR:low thres", "higher than high");
                 delay(2000);
                 lcd.clear();
                 state = CONFIG_LOW_TEMPERATURE;
@@ -189,7 +190,7 @@ void updateState()
             lcd.clear();
             break;
         default:
-            Serial.println(F("Unknown state"));
+            Serial.println(F("ERROR: Unknown state"));
     }
 }
 
@@ -211,18 +212,21 @@ void readDht()
 
     float heatIndex = dht.computeHeatIndex(temperature, humidity, false);
     lastTemperature = heatIndex;
+    lastHumidity = humidity;
 }
 
 void updateDisplay()
 {
     lcd.setCursor(0, 0);
-    lcd.print("T: ");
+    lcd.print("T:");
     char buffer[6];
     snprintf(buffer, sizeof(buffer), "%.1f", lastTemperature);
     lcd.print(buffer);
-    lcd.print(" C ");
+    lcd.print(" C  H:");
+    lcd.print(int(lastHumidity));
+    lcd.print("%");
     lcd.setCursor(0, 1);
-    lcd.print("WiFi: ");
+    lcd.print("WiFi:");
     lcd.print(lastSignalStrength);
     lcd.print(" dBm");
 }
@@ -303,7 +307,7 @@ void updateLEDs()
         digitalWrite(SIGNAL_STRENGTH_LED, HIGH);
 }
 
-void printError(const char* displayLine1, const char* displayLine2)
+void printToLCD(const char* displayLine1, const char* displayLine2)
 {
     lcd.setCursor(0, 0);
     lcd.print(displayLine1);
