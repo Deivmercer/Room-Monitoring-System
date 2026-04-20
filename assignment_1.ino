@@ -74,6 +74,7 @@ void setup()
 
     // Configuring server routes
     server.on("/", handleRoot);
+    server.on("/set_thresholds", handleSetThresholds);
     server.onNotFound(handleNotFound);
     server.begin();
 
@@ -352,15 +353,35 @@ void handleRoot()
                 "<style>\n"
                     "html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}\n"
                     "body{margin-top: 50px;} h1 {color: #444444;margin: 50px auto 30px;} h3 {color: #444444;margin-bottom: 50px;}\n"
+                    ".button {display: block;width: 150px;background-color: #1abc9c;border: none;color: white;padding: 13px;text-decoration: none;font-size: 25px;margin: 0px auto 35px;cursor: pointer;border-radius: 4px;}\n"
+                    ".button:active {background-color: #158c75;}\n"
                     "p {font-size: 14px;color: #888;margin-bottom: 10px;}\n"
                 "</style>\n"
             "</head>\n"
             "<body>\n"
-                "<h1>Values:</h1>\n");
-
-    html += F("<p>Temperature: ") + String(lastTemperature) + F(" &deg;C<p>\n");
-    html += F("<p>Humidity: ") + String(lastHumidity) + F("%<p>\n");
-    html += F("<p>WiFi signal strength: ") + String(lastSignalStrength) + F(" dBm<p>\n");
+                "<h1>Last readings:</h1>\n");
+    html += F(  "<p>Temperature: ") + String(lastTemperature) + F(" &deg;C</p>\n");
+    html += F(  "<p>Humidity: ") + String(lastHumidity) + F("%</p>\n");
+    html += F(  "<p>WiFi signal strength: ") + String(lastSignalStrength) + F(" dBm</p>\n");
+    html += F(  "<br>\n"
+                "<h1>Configure thresholds:</h1>\n"
+                "<form action='/set_thresholds' method='post'>\n"
+                    "<p>\n"
+                        "<label for='low_temperature'>Low temperature: </label>\n");
+    html += F(          "<input type='number' id='low_temperature' name='low_temperature' step='0.01' min='") + String(TEMPERATURE_THRESHOLD_MIN) + F("' max='") + String(TEMPERATURE_THRESHOLD_MAX) + F("' value='") + String(lowTemperatureThreshold) + F("'/>\n");
+    html += F(      "</p>\n"
+                    "<p>\n"
+                        "<label for='high_temperature'>High temperature: </label>\n");
+    html += F(          "<input type='number' id='high_temperature' name='high_temperature' step='0.01' min='") + String(TEMPERATURE_THRESHOLD_MIN) + F("' max='") + String(TEMPERATURE_THRESHOLD_MAX) + F("' value='") + String(highTemperatureThreshold) + F("'/>\n");
+    html += F(      "</p>\n"
+                    "<p>\n"
+                        "<label for='signal_strength'>Signal stength: </label>\n");
+    html += F(          "<input type='number' id='signal_strength' name='signal_strength' step='1' min='") + String(SIGNAL_STRENGTH_THRESHOLD_MAX) + F("' max='") + String(SIGNAL_STRENGTH_THRESHOLD_MIN) + F("' value='") + String(signalStrengthThreshold) + F("'/>\n");
+    html += F(      "</p>\n"
+                    "<br>\n"
+                    "<input class='button' type='submit' value='Set'/>\n"
+                "</form>\n");
+    
 
     html += F(
             "</body>\n"
@@ -372,4 +393,48 @@ void handleRoot()
 void handleNotFound()
 {
     server.send(404, F("text/plain"), F("Not found"));
+}
+
+void handleSetThresholds()
+{
+    if (server.method() != HTTP_POST)
+    {
+        server.send(405, F("text/plain"), F("Method Not Allowed"));
+        return;
+    }
+    if (!server.hasArg(F("low_temperature")) || !server.hasArg(F("high_temperature")) || !server.hasArg(F("signal_strength")))
+    {
+        server.send(400, F("text/plain"), F("Missing arguments"));
+        return;
+    }
+    float newLowTemperature = server.arg(F("low_temperature")).toFloat();
+    float newHighTemperature = server.arg(F("high_temperature")).toFloat();
+    if (newLowTemperature >= newHighTemperature)
+    {
+        server.send(400, F("text/plain"), F("The low temperature threshold must be lower then the high threhold"));
+        return;
+    }
+    if (newLowTemperature < TEMPERATURE_THRESHOLD_MIN || newLowTemperature > TEMPERATURE_THRESHOLD_MAX)
+    {
+        server.send(400, F("text/plain"), F("Low temperature threshold out of range"));
+        return;
+    }
+    if (newHighTemperature < TEMPERATURE_THRESHOLD_MIN || newHighTemperature > TEMPERATURE_THRESHOLD_MAX)
+    {
+        server.send(400, F("text/plain"), F("High temperature threshold out of range"));
+        return;
+    }
+    int newSignalStrength = server.arg(F("signal_strength")).toInt();
+    if (newSignalStrength < SIGNAL_STRENGTH_THRESHOLD_MAX || newSignalStrength > SIGNAL_STRENGTH_THRESHOLD_MIN)
+    {
+        server.send(400, F("text/plain"), F("Signal strength threshold out of range"));
+        return;
+    }
+
+    lowTemperatureThreshold = newLowTemperature;
+    highTemperatureThreshold = newHighTemperature;
+    signalStrengthThreshold = newSignalStrength;
+
+    server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
+    server.send(301);
 }

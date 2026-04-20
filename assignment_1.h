@@ -34,6 +34,7 @@ void updateLEDs();
 void printToLCD(String displayLine1, String displayLine2);
 void handleRoot();
 void handleNotFound();
+void handleSetThresholds();
 
 enum State
 {
