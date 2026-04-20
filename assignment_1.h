@@ -35,11 +35,14 @@ void printToLCD(String displayLine1, String displayLine2);
 void handleRoot();
 void handleNotFound();
 void handleSetThresholds();
+void handlePause();
+void handleResume();
 
 enum State
 {
     NORMAL,
     CONFIG_LOW_TEMPERATURE,
     CONFIG_HIGH_TEMPERATURE,
-    CONFIG_SIGNAL_STRENGTH
+    CONFIG_SIGNAL_STRENGTH,
+    PAUSED
 };

@@ -27,6 +27,7 @@ bool updateData = false;
 
 State state;
 
+bool isActive = true;
 float lowTemperatureThreshold = -1.0;
 float highTemperatureThreshold = 27.0;
 int signalStrengthThreshold = -65;
@@ -75,6 +76,8 @@ void setup()
     // Configuring server routes
     server.on("/", handleRoot);
     server.on("/set_thresholds", handleSetThresholds);
+    server.on("/pause", handlePause);
+    server.on("/resume", handleResume);
     server.onNotFound(handleNotFound);
     server.begin();
 
@@ -116,6 +119,10 @@ void loop()
             break;
         case CONFIG_SIGNAL_STRENGTH:
             configureSignalStrengthThreshold();
+            break;
+        case PAUSED:
+            lcd.clear();
+            printToLCD("Paused", "");
             break;
         default:
             Serial.println(F("ERROR: Unknown state"));
@@ -360,9 +367,22 @@ void handleRoot()
             "</head>\n"
             "<body>\n"
                 "<h1>Last readings:</h1>\n");
+
+    if (state == PAUSED)
+        html += F("<p>Status: paused</p>\n");
+    else
+        html += F("<p>Status: active</p>\n");
+
     html += F(  "<p>Temperature: ") + String(lastTemperature) + F(" &deg;C</p>\n");
     html += F(  "<p>Humidity: ") + String(lastHumidity) + F("%</p>\n");
-    html += F(  "<p>WiFi signal strength: ") + String(lastSignalStrength) + F(" dBm</p>\n");
+    html += F(  "<p>WiFi signal strength: ") + String(lastSignalStrength) + F(" dBm</p>\n"
+                "<br>\n");
+
+    if (state == PAUSED)
+        html += F("<a class='button' href='/resume'>Resume</a>\n");
+    else
+        html += F("<a class='button' href='/pause'>Pause</a>\n");
+
     html += F(  "<br>\n"
                 "<h1>Configure thresholds:</h1>\n"
                 "<form action='/set_thresholds' method='post'>\n"
@@ -407,6 +427,7 @@ void handleSetThresholds()
         server.send(400, F("text/plain"), F("Missing arguments"));
         return;
     }
+
     float newLowTemperature = server.arg(F("low_temperature")).toFloat();
     float newHighTemperature = server.arg(F("high_temperature")).toFloat();
     if (newLowTemperature >= newHighTemperature)
@@ -424,6 +445,7 @@ void handleSetThresholds()
         server.send(400, F("text/plain"), F("High temperature threshold out of range"));
         return;
     }
+
     int newSignalStrength = server.arg(F("signal_strength")).toInt();
     if (newSignalStrength < SIGNAL_STRENGTH_THRESHOLD_MAX || newSignalStrength > SIGNAL_STRENGTH_THRESHOLD_MIN)
     {
@@ -435,6 +457,20 @@ void handleSetThresholds()
     highTemperatureThreshold = newHighTemperature;
     signalStrengthThreshold = newSignalStrength;
 
+    server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
+    server.send(301);
+}
+
+void handlePause()
+{
+    state = PAUSED;
+    server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
+    server.send(301);
+}
+
+void handleResume()
+{
+    state = NORMAL;
     server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
     server.send(301);
 }
