@@ -4,6 +4,7 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <ESP8266WebServer.h>
+#include <InfluxDbClient.h>
 #include "assignment_1.h"
 
 char ssid[] = SECRET_SSID;
@@ -17,6 +18,9 @@ IPAddress gateway(GATEWAY);
 WiFiClient client;
 
 ESP8266WebServer server(80);
+
+InfluxDBClient client_idb(INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN);
+Point pointDevice("device_status");
 
 DHT dht = DHT(DHTPIN, DHTTYPE);
 
@@ -73,6 +77,8 @@ void setup()
     // Init system state
     state = NORMAL;
 
+    pointDevice.addTag("room_number", "1");
+
     // Configuring server routes
     server.on("/", handleRoot);
     server.on("/set_thresholds", handleSetThresholds);
@@ -109,6 +115,7 @@ void loop()
             readDht();
             lastSignalStrength = WiFi.RSSI();
             updateDisplay();
+            writeReadingsToDB();
             updateData = false;
             break;
         case CONFIG_LOW_TEMPERATURE:
@@ -473,4 +480,27 @@ void handleResume()
     state = NORMAL;
     server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
     server.send(301);
+}
+
+void writeReadingsToDB()
+{
+    // Checking server connection
+    if (!client_idb.validateConnection())
+    {
+        printToLCD("InfluxDB", "not connected");
+        delay(2000);
+        return;
+    }
+
+    pointDevice.clearFields();
+    pointDevice.addField("temperature", lastTemperature);
+    pointDevice.addField("humidity", lastHumidity);
+    pointDevice.addField("signal_strength", lastSignalStrength);
+    if (!client_idb.writePoint(pointDevice))
+    {
+        printToLCD("Failed to write", "to InfluxDB");
+        delay(2000);
+        Serial.print(F("InfluxDB write failed: "));
+        Serial.println(client_idb.getLastErrorMessage());
+    }
 }

@@ -37,6 +37,7 @@ void handleNotFound();
 void handleSetThresholds();
 void handlePause();
 void handleResume();
+void writeReadingsToDB();
 
 enum State
 {
