@@ -21,6 +21,8 @@
 #define TEMPERATURE_THRESHOLD_MAX 50.0
 #define SIGNAL_STRENGTH_THRESHOLD_MIN 0
 #define SIGNAL_STRENGTH_THRESHOLD_MAX -100
+#define DEFAULT_ROOM_NUMBER "1"
+#define MAX_ROOMS 9
 
 void connectToWiFi();
 void updateState();
@@ -30,6 +32,7 @@ void updateDisplay();
 void configureLowTemperatureThreshold();
 void configureHighTemperatureThreshold();
 void configureSignalStrengthThreshold();
+void configureRoomNumber();
 void updateLEDs();
 void printToLCD(String displayLine1, String displayLine2);
 void handleRoot();
@@ -37,6 +40,7 @@ void handleNotFound();
 void handleSetThresholds();
 void handlePause();
 void handleResume();
+void handleChangeRoom();
 void writeReadingsToDB();
 
 enum State
@@ -45,5 +49,6 @@ enum State
     CONFIG_LOW_TEMPERATURE,
     CONFIG_HIGH_TEMPERATURE,
     CONFIG_SIGNAL_STRENGTH,
+    CONFIG_ROOM_NUMBER,
     PAUSED
 };
