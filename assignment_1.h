@@ -42,6 +42,7 @@ void handlePause();
 void handleResume();
 void handleChangeRoom();
 void writeReadingsToDB();
+String getErrorPage(String errorMessage);
 
 enum State
 {

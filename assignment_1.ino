@@ -423,10 +423,10 @@ void handleRoot()
                         "<label for='room_number'>Room: #</label>\n");
     html += F(          "<input type='number' id='room_number' name='room_number' step='1' min='1' max='") + String(MAX_ROOMS) + F("' value='") + roomNumber + F("'/>\n");
     html += F(      "</p>\n"
+                    "<br>\n"
                     "<input class='button' type='submit' value='Update'/>\n"
-                "</form>\n");
-
-    html += F(  "<br>\n"
+                "</form>\n"
+                "<br>\n"
                 "<h1>Configure thresholds:</h1>\n"
                 "<form action='/set_thresholds' method='post'>\n"
                     "<p>\n"
@@ -443,10 +443,7 @@ void handleRoot()
     html += F(      "</p>\n"
                     "<br>\n"
                     "<input class='button' type='submit' value='Set'/>\n"
-                "</form>\n");
-    
-
-    html += F(
+                "</form>\n"
             "</body>\n"
         "</html>\n");
 
@@ -455,19 +452,19 @@ void handleRoot()
 
 void handleNotFound()
 {
-    server.send(404, F("text/plain"), F("Not found"));
+    server.send(404, F("text/html"), getErrorPage(F("Page not found")));
 }
 
 void handleSetThresholds()
 {
     if (server.method() != HTTP_POST)
     {
-        server.send(405, F("text/plain"), F("Method Not Allowed"));
+        server.send(405, F("text/html"), getErrorPage(F("Method not allowed")));
         return;
     }
     if (!server.hasArg(F("low_temperature")) || !server.hasArg(F("high_temperature")) || !server.hasArg(F("signal_strength")))
     {
-        server.send(400, F("text/plain"), F("Missing arguments"));
+        server.send(400, F("text/html"), getErrorPage(F("Missing arguments")));
         return;
     }
 
@@ -475,24 +472,24 @@ void handleSetThresholds()
     float newHighTemperature = server.arg(F("high_temperature")).toFloat();
     if (newLowTemperature >= newHighTemperature)
     {
-        server.send(400, F("text/plain"), F("The low temperature threshold must be lower then the high threhold"));
+        server.send(400, F("text/html"), getErrorPage(F("The low temperature threshold must be lower than the high temperature threshold")));
         return;
     }
     if (newLowTemperature < TEMPERATURE_THRESHOLD_MIN || newLowTemperature > TEMPERATURE_THRESHOLD_MAX)
     {
-        server.send(400, F("text/plain"), F("Low temperature threshold out of range"));
+        server.send(400, F("text/html"), getErrorPage(F("Low temperature threshold out of range")));
         return;
     }
     if (newHighTemperature < TEMPERATURE_THRESHOLD_MIN || newHighTemperature > TEMPERATURE_THRESHOLD_MAX)
     {
-        server.send(400, F("text/plain"), F("High temperature threshold out of range"));
+        server.send(400, F("text/html"), getErrorPage(F("High temperature threshold out of range")));
         return;
     }
 
     int newSignalStrength = server.arg(F("signal_strength")).toInt();
     if (newSignalStrength < SIGNAL_STRENGTH_THRESHOLD_MAX || newSignalStrength > SIGNAL_STRENGTH_THRESHOLD_MIN)
     {
-        server.send(400, F("text/plain"), F("Signal strength threshold out of range"));
+        server.send(400, F("text/html"), getErrorPage(F("Signal strength threshold out of range")));
         return;
     }
 
@@ -508,19 +505,19 @@ void handleChangeRoom()
 {
     if (server.method() != HTTP_POST)
     {
-        server.send(405, F("text/plain"), F("Method Not Allowed"));
+        server.send(405, F("text/html"), getErrorPage(F("Method not allowed")));
         return;
     }
     if (!server.hasArg(F("room_number")))
     {
-        server.send(400, F("text/plain"), F("Missing arguments"));
+        server.send(400, F("text/html"), getErrorPage(F("Missing arguments")));
         return;
     }
 
     float newRoomNumber = server.arg(F("room_number")).toInt();
     if (newRoomNumber < 1 || newRoomNumber > MAX_ROOMS)
     {
-        server.send(400, F("text/plain"), F("Room ID out of range"));
+        server.send(400, F("text/html"), getErrorPage(F("Room ID out of range")));
         return;
     }
 
@@ -542,6 +539,33 @@ void handleResume()
     state = NORMAL;
     server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
     server.send(301);
+}
+
+String getErrorPage(String errorMessage)
+{
+    String html = F(
+        "<!DOCTYPE html>\n"
+        "<html>\n"
+            "<head>\n"
+                "<meta http-equiv=\"refresh\" content=\"30\" name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\">\n"
+                "<title>Dashboard</title>\n"
+                "<style>\n"
+                    "html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}\n"
+                    "body{margin-top: 50px;} h1 {color: #444444;margin: 50px auto 30px;} h3 {color: #444444;margin-bottom: 50px;}\n"
+                    ".button {display: block;width: 120px;background-color: #1abc9c;border: none;color: white;padding: 13px;text-decoration: none;font-size: 25px;margin: 0px auto 35px;cursor: pointer;border-radius: 4px;}\n"
+                    ".button:active {background-color: #158c75;}\n"
+                    "h1 {color: #FF0000}\n"
+                "</style>\n"
+            "</head>\n"
+            "<body>\n"
+                "<h1>ERROR</h1>\n");
+    html += F(  "<h2>") + errorMessage + F("</h2>\n");
+    html += F(  "<br>\n"
+                "<a class='button' href='/'>Home</a>\n"
+            "</body>\n"
+        "</html>\n");
+    
+    return html;
 }
 
 void writeReadingsToDB()
