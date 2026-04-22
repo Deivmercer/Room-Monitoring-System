@@ -514,7 +514,7 @@ void handleChangeRoom()
         return;
     }
 
-    float newRoomNumber = server.arg(F("room_number")).toInt();
+    int newRoomNumber = server.arg(F("room_number")).toInt();
     if (newRoomNumber < 1 || newRoomNumber > MAX_ROOMS)
     {
         server.send(400, F("text/html"), getErrorPage(F("Room ID out of range")));
@@ -522,6 +522,8 @@ void handleChangeRoom()
     }
 
     roomNumber = newRoomNumber;
+    pointDevice.clearTags();
+    pointDevice.addTag("room_number", roomNumber);
 
     server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
     server.send(301);
@@ -573,6 +575,7 @@ void writeReadingsToDB()
     // Checking server connection
     if (!client_idb.validateConnection())
     {
+        lcd.clear();
         printToLCD("InfluxDB", "not connected");
         delay(2000);
         return;
