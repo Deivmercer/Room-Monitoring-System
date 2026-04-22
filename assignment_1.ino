@@ -422,10 +422,24 @@ void handleRoot()
     html += F(      "WiFi signal strength: ") + String(lastSignalStrength) + F(" dBm</p>\n"
                 "<br>\n");
 
+
+
     if (state == PAUSED)
-        html += F("<a class='button' href='/resume'>Resume</a>\n");
+    {
+        html += F(
+                "<form action='/resume' method='post'>\n"
+                    "<input class='button' type='submit' value='Resume'/>\n"
+                "</form>\n"
+        );
+    }
     else
-        html += F("<a class='button' href='/pause'>Pause</a>\n");
+    {
+        html += F(
+                "<form action='/pause' method='post'>\n"
+                    "<input class='button' type='submit' value='Pause'/>\n"
+                "</form>\n"
+        );
+    }
 
     html += F(  "<br>\n"
                 "<h1>Update room ID:</h1>\n"
