@@ -383,6 +383,8 @@ float linearMapPotentiometerf(int value, float min, float max)
 
 void handleRoot()
 {
+    String warningIconHtml = F("<img style='vertical-align: middle; padding-right: 0.5em' width='25' height='25' src='https://git.davemercer.moe/Davemercer/iot_assignment_1/raw/branch/master/icons/warning_50dp.png'/>");
+
     String html = F(
         "<!DOCTYPE html>\n"
         "<html>\n"
@@ -406,9 +408,18 @@ void handleRoot()
         html += F("<p>Status: active</p>\n");
 
     html += F(  "<p>Room: #") + roomNumber + F("</p>\n");
-    html += F(  "<p>Temperature: ") + String(lastTemperature) + F(" &deg;C</p>\n");
+
+    html += F(  "<p>");
+    if (lastTemperature <= lowTemperatureThreshold || lastTemperature >= highTemperatureThreshold)
+        html += warningIconHtml;
+    html += F(      "Temperature: ") + String(lastTemperature) + F(" &deg;C</p>\n");
+
     html += F(  "<p>Humidity: ") + String(lastHumidity) + F("%</p>\n");
-    html += F(  "<p>WiFi signal strength: ") + String(lastSignalStrength) + F(" dBm</p>\n"
+
+    html += F(  "<p>");
+    if (lastSignalStrength < signalStrengthThreshold)
+        html += warningIconHtml;
+    html += F(      "WiFi signal strength: ") + String(lastSignalStrength) + F(" dBm</p>\n"
                 "<br>\n");
 
     if (state == PAUSED)
