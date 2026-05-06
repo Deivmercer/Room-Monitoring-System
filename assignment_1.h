@@ -24,6 +24,9 @@
 #define DEFAULT_ROOM_NUMBER "1"
 #define MAX_ROOMS 9
 
+#define MQTT_BUFFER_SIZE 128
+#define MQTT_TOPIC_SENSORS "rms/%s/sensors"
+
 void connectToWiFi();
 void updateState();
 void toggleReadingFlag();
@@ -43,6 +46,7 @@ void handleResume();
 void handleChangeRoom();
 void writeReadingsToDB();
 String getErrorPage(String errorMessage);
+void connectToMqttBroker();
 
 enum State
 {

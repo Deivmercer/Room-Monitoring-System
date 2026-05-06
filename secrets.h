@@ -5,10 +5,10 @@
 #define SECRET_PASS "WiFi_Password"              // WiFi password
 
 // ONLY if static configuration is needed
-// #define IP {149, 132, 182, 140}                  // IP address
-// #define SUBNET {255, 255, 255, 0}                // Subnet mask
-// #define DNS {149, 132, 2, 3}                     // DNS
-// #define GATEWAY {149, 132, 182, 1}               // Gateway
+#define IP {192, 168, 1, 100}                    // IP address
+#define SUBNET {255, 255, 255, 0}                // Subnet mask
+#define DNS {149, 132, 2, 3}                     // DNS
+#define GATEWAY {149, 132, 182, 1}               // Gateway
 
 // InfluxDB cfg
 #define INFLUXDB_URL "<influxdb-url>"               // IP and port of the InfluxDB server
@@ -17,3 +17,9 @@
                                                     //  set a name for the token and select read and write permissions for your buket only!
 #define INFLUXDB_ORG "<influxdb-org>"               // organization id (Use: InfluxDB UI -> Profile -> About -> <name under organization profile> )
 #define INFLUXDB_BUCKET "<influxdb-bucket>"         // bucket name (Use: InfluxDB UI -> Load Data -> Buckets)
+
+// MQTT access
+#define MQTT_BROKER_IP "149.132.178.179"        // IP address of the machine running the MQTT broker
+#define MQTT_CLIENT_ID "esp8266"                // client identifier
+#define MQTT_USERNAME "mqttBroker_user"         // mqtt user's name
+#define MQTT_PASSWORD "mqttBroker_pass"         // mqtt user's password

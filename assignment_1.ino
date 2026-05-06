@@ -5,6 +5,8 @@
 #include <LiquidCrystal_I2C.h>
 #include <ESP8266WebServer.h>
 #include <InfluxDbClient.h>
+#include <MQTT.h>
+#include <ArduinoJson.h>
 #include "assignment_1.h"
 
 char ssid[] = SECRET_SSID;
@@ -21,6 +23,10 @@ ESP8266WebServer server(80);
 
 InfluxDBClient client_idb(INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN);
 Point pointDevice("room_status");
+
+MQTTClient mqttClient(MQTT_BUFFER_SIZE);
+WiFiClient networkClient;
+char mqttSensorsTopic[64];
 
 DHT dht = DHT(DHTPIN, DHTTYPE);
 
@@ -89,6 +95,9 @@ void setup()
     server.onNotFound(handleNotFound);
     server.begin();
 
+    // setup MQTT
+    mqttClient.begin(MQTT_BROKER_IP, 1883, networkClient);
+
     Serial.begin(115200);
 }
 
@@ -100,6 +109,8 @@ void loop()
     // Checking if WiFi is connected
     if (WiFi.status() != WL_CONNECTED)
         connectToWiFi();
+    if (!mqttClient.connected())
+        connectToMqttBroker();
 
     byte buttonState = digitalRead(BUTTON);
     if (buttonState == LOW && !waitButtonReleased)
@@ -118,6 +129,7 @@ void loop()
             lastSignalStrength = WiFi.RSSI();
             updateDisplay();
             writeReadingsToDB();
+            publishSensorData();
             updateData = false;
             break;
         case CONFIG_LOW_TEMPERATURE:
@@ -144,6 +156,7 @@ void loop()
 
     // Listening for clients on port 80
     server.handleClient();
+    mqttClient.loop();
 }
 
 void connectToWiFi()
@@ -422,8 +435,6 @@ void handleRoot()
     html += F(      "WiFi signal strength: ") + String(lastSignalStrength) + F(" dBm</p>\n"
                 "<br>\n");
 
-
-
     if (state == PAUSED)
     {
         html += F(
@@ -617,4 +628,30 @@ void writeReadingsToDB()
         Serial.print(F("InfluxDB write failed: "));
         Serial.println(client_idb.getLastErrorMessage());
     }
+}
+
+void connectToMqttBroker()
+{
+    char macAddress[18];
+    strcpy(macAddress, WiFi.macAddress().c_str());
+    snprintf(mqttSensorsTopic, sizeof(mqttSensorsTopic), MQTT_TOPIC_SENSORS, macAddress);
+
+    Serial.print(F("Connecting to MQTT broker..."));
+    while(!mqttClient.connect(MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD))
+    {
+        Serial.print(F("."));
+        delay(1000);
+    }
+    Serial.println(F("\nConnected"));
+}
+
+void publishSensorData()
+{
+    JsonDocument json;
+    json["temperature"] = lastTemperature;
+    json["humidity"] = lastHumidity;
+    json["signal_strength"] = lastSignalStrength;
+    char buffer[MQTT_BUFFER_SIZE];
+    size_t length = serializeJson(json, buffer);
+    mqttClient.publish(mqttSensorsTopic, buffer, length, false, 0);
 }
