@@ -1,16 +1,26 @@
 const express = require("express");
+const path = require("path");
+const indexRouter = require("./routes/index");
 const mqtt = require("mqtt");
 const app = express();
 const devices = new Set();
+
+app.use(express.static(path.join(__dirname, "public")));
 
 const port = process.env.PORT || "3000";
 app.listen(port, () => {
     console.log(`Listening on port ${port}`)
 })
 
+app.use("/", indexRouter);
+
 app.get("/devices", (req, res) => {
     res.send([...devices]);
 });
+
+app.use((req, res, next) => {
+    res.redirect("/");
+})
 
 const options = {
     clean: true,

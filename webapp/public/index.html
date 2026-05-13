@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>RMS Dashboard</title>
+        <link rel="stylesheet" href="/stylesheets/style.css">
+    </head>
+    <body>
+        <div id="login_container">
+            <h1>Login</h1>
+            <p>
+                <label for="client_id">Client ID: </label>
+                <input type="text" id="client_id" name="client_id" placeholder="Client ID"/>
+            </p>
+            <p>
+                <label for="username">Username: </label>
+                <input type="text" id="username" name="username" placeholder="Username"/>
+            </p>
+            <p>
+                <label for="password">Password: </label>
+                <input type="password" id="password" name="password" placeholder="Password"/>
+            </p>
+            <button id="login_button" type="button">Login</button>
+        </div>
+        <div id="main_container" hidden>
+            <h1>Last readings:</h1>
+            <p>Status: paused</p>
+            <p>Room: #roomNumber</p>
+            <p>
+                <img style="vertical-align: middle; padding-right: 0.5em" width="25" height="25" id="temperature_warning" src="/images/warning_50dp.png" hidden/>
+                Temperature: <span id="last_temperature">0</span>&deg;C
+            </p>
+            <p>Humidity: <span id="last_humidity">0</span>%</p>
+            <p>
+                <img style="vertical-align: middle; padding-right: 0.5em" width="25" height="25" id="signal_strength_warning" src="/images/warning_50dp.png" hidden/>
+                WiFi signal strength: <span id="last_signal_strength">0</span> dBm
+            </p>
+            <br>
+            <form action="/resume" method="post">
+                <input class="button" type="submit" value="Resume"/>
+            </form>
+            <form action="/pause" method="post">
+                <input class="button" type="submit" value="Pause"/>
+            </form>
+            <br>
+            <h1>Update room ID:</h1>
+            <form action="/change_room" method="post">
+                <p>
+                    <label for="room_number">Room: #</label>
+                    <input type="number" id="room_number" name="room_number" step="1" min="1" max="MAX_ROOMS" value="roomNumber"/>
+                </p>
+                <br>
+                <input class="button" type="submit" value="Update"/>
+            </form>
+            <br>
+            <h1>Configure thresholds:</h1>
+            <form action="/set_thresholds" method="post">
+                <p>
+                    <label for="low_temperature">Low temperature: </label>
+                    <input type="number" id="low_temperature" name="low_temperature" step="0.01" min="TEMPERATURE_THRESHOLD_MIN" max="TEMPERATURE_THRESHOLD_MAX" value="lowTemperatureThreshold"/>
+                </p>
+                <p>
+                    <label for="high_temperature">High temperature: </label>
+                    <input type="number" id="high_temperature" name="high_temperature" step="0.01" min="TEMPERATURE_THRESHOLD_MIN" max="TEMPERATURE_THRESHOLD_MAX" value="highTemperatureThreshold"/>
+                </p>
+                <p>
+                    <label for="signal_strength">Signal stength: </label>
+                    <input type="number" id="signal_strength" name="signal_strength" step="1" min="SIGNAL_STRENGTH_THRESHOLD_MAX" max="SIGNAL_STRENGTH_THRESHOLD_MIN" value="signalStrengthThreshold"/>
+                </p>
+                <br>
+                <input class="button" type="submit" value="Set"/>
+            </form>
+        </div>
+        <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+        <script src="/javascripts/index.js"></script>
+        <script src="/javascripts/mqttClient.js"></script>
+    </body>
+</html>
