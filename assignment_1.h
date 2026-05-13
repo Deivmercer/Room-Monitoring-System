@@ -24,7 +24,8 @@
 #define DEFAULT_ROOM_NUMBER "1"
 #define MAX_ROOMS 9
 
-#define MQTT_BUFFER_SIZE 128
+#define MQTT_BUFFER_SIZE 256
+#define MQTT_TOPIC_DEVICES "rms/devices"
 #define MQTT_TOPIC_SENSORS "rms/%s/sensors"
 
 void connectToWiFi();

@@ -635,6 +635,14 @@ void connectToMqttBroker()
     char macAddress[18];
     strcpy(macAddress, WiFi.macAddress().c_str());
     snprintf(mqttSensorsTopic, sizeof(mqttSensorsTopic), MQTT_TOPIC_SENSORS, macAddress);
+    snprintf(mqttControlTopic, sizeof(mqttControlTopic), MQTT_TOPIC_THRESHOLDS, macAddress);
+
+    JsonDocument lwt;
+    lwt["status"] = F("disconnected");
+    lwt["mac_address"] = macAddress;
+    char lwt_buffer[MQTT_BUFFER_SIZE];
+    serializeJson(lwt, lwt_buffer);
+    mqttClient.setWill(MQTT_TOPIC_DEVICES, lwt_buffer, false, 2);
 
     Serial.print(F("Connecting to MQTT broker..."));
     while(!mqttClient.connect(MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD))
@@ -643,6 +651,14 @@ void connectToMqttBroker()
         delay(1000);
     }
     Serial.println(F("\nConnected"));
+    JsonDocument json;
+    json["status"] = F("connected");
+    json["mac_address"] = macAddress;
+    char buffer[MQTT_BUFFER_SIZE];
+    size_t length = serializeJson(json, buffer);
+    mqttClient.publish(MQTT_TOPIC_DEVICES, buffer, length, false, 2);
+
+    mqttClient.subscribe(mqttControlTopic);
 }
 
 void publishSensorData()
