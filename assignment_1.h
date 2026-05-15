@@ -27,9 +27,12 @@
 #define MQTT_BUFFER_SIZE 256
 #define MQTT_TOPIC_MAIN "rms/%s"
 #define MQTT_TOPIC_DEVICES "rms/devices"
-#define MQTT_TOPIC_TEMPERATURE "/sensors/temperature"
-#define MQTT_TOPIC_HUMIDITY "/sensors/humidity"
-#define MQTT_TOPIC_SIGNAL "/sensors/signal"
+#define MQTT_SUBTOPIC_ACK "/ack"
+#define MQTT_SUBTOPIC_TEMPERATURE "/sensors/temperature"
+#define MQTT_SUBTOPIC_HUMIDITY "/sensors/humidity"
+#define MQTT_SUBTOPIC_SIGNAL "/sensors/signal"
+#define MQTT_SUBTOPIC_ROOM "/room"
+#define MQTT_SUBTOPIC_ROOM_UPDATE "/room/update"
 
 void connectToWiFi();
 void updateState();
@@ -52,6 +55,12 @@ void handleChangeRoom();
 void writeReadingsToDB();
 String getErrorPage(String errorMessage);
 void connectToMqttBroker();
+void onMqttMessageReceived(String& topic, String& payload);
+void updateDeviceStatus();
+void publishDeviceRoom();
+void mqttUpdateRoom(String room);
+void publishRequestResult(const char* topic, String result);
+void publishRequestResult(const char* topic, String result, String error);
 
 enum State
 {

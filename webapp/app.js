@@ -32,38 +32,62 @@ const options = {
 const client = mqtt.connect(process.env.MQTT_BROKER_URL, options);
 
 client.on("connect", () => {
-    client.subscribe("rms/devices", (err) => {
-        if (err)
-            console.log(err);
-        else
-            console.log("Subscribed to rms/devices");
-    })
+    subscribeTopic("rms/devices");
 });
 
 client.on("message", (topic, message) => {
 
-    if (topic !== "rms/devices")
-        return;
+    console.log(`Received message ${message} from topic ${topic}`);
+    if (topic === "rms/devices")
+        handleMqttDevice(message);
+    else if (topic.endsWith("/room"))
+        restoreDeviceRoom(topic, message);
+});
+
+function subscribeTopic(topic) {
+
+    client.subscribe(topic, (err) => {
+        if (err)
+            console.error(err);
+        else
+            console.log(`Subscribed to ${topic}`);
+    });
+}
+
+function handleMqttDevice(message) {
 
     let json = JSON.parse(message);
     let deviceTopic = `rms/${json.mac_address}/sensors`;
     if (json.status === "connected") {
         client.subscribe(deviceTopic, (err) => {
             if (err)
-                console.log(err);
+                console.error(err);
             else {
                 console.log(`Subscribed to ${deviceTopic}`);
                 devices.add(json.mac_address);
             }
         });
+        subscribeTopic(`rms/${json.mac_address}/room`);
     } else if (json.status === "disconnected") {
         client.unsubscribe(deviceTopic, (err) => {
             if (err)
-                console.log(err);
+                console.error(err);
             else {
                 console.log(`Unsubscribed from ${deviceTopic}`);
                 devices.delete(json.mac_address);
             }
         });
     }
-});
+}
+
+function restoreDeviceRoom(topic, message) {
+
+    let newTopic = topic + "/update";
+    client.publish(newTopic, message)
+    client.unsubscribe(topic, (err) => {
+        if (err)
+            console.error(err);
+        else
+            console.log(`Unsubscribed from ${topic}`);
+    });
+}

@@ -1,5 +1,7 @@
 const MQTT_BROKER_URL = "ws://davemercer.moe:9001"; // Browsers only support websockets
-const MQTT_DEVICE_TOPIC = "rms/devices"
+const MQTT_TOPIC_DEVICE = "rms/devices"
+const MQTT_SUBTOPIC_SENSORS = "/sensors/#"
+const MQTT_SUBTOPIC_ROOM = "/room"
 let client;
 
 function mqttConnect(clientId, username, password, callback) {
@@ -15,11 +17,11 @@ function mqttConnect(clientId, username, password, callback) {
 
     client.on("connect", () => {
         callback();
-        subscribeTopic(MQTT_DEVICE_TOPIC);
+        subscribeTopic(MQTT_TOPIC_DEVICE);
     });
 
     client.on("message", (topic, message) => {
-        if (topic === MQTT_DEVICE_TOPIC) {
+        if (topic === MQTT_TOPIC_DEVICE) {
             let json = JSON.parse(message);
             if (json.status === "connected")
                 mqttSubscribeDevice(json.mac_address);
@@ -35,7 +37,8 @@ function mqttConnect(clientId, username, password, callback) {
         } else if (topic.includes("/sensors/")) {
             let type = topic.split("/sensors/")[1];
             onDataReceived(message, type);
-        }
+        } else if (topic.endsWith("/room"))
+            onRoomUpdated(message)
     });
 }
 
@@ -43,7 +46,8 @@ function mqttSubscribeDevice(device) {
 
     let mainTopic = `rms/${device}`;
     subscribeTopic(mainTopic);
-    subscribeTopic(mainTopic + "/sensors/#");
+    subscribeTopic(mainTopic + MQTT_SUBTOPIC_SENSORS);
+    subscribeTopic(mainTopic + MQTT_SUBTOPIC_ROOM);
 }
 
 function subscribeTopic(topic) {

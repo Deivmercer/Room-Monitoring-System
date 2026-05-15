@@ -97,6 +97,7 @@ void setup()
 
     // setup MQTT
     mqttClient.begin(MQTT_BROKER_IP, 1883, networkClient);
+    mqttClient.onMessage(onMqttMessageReceived);
 
     Serial.begin(115200);
 }
@@ -242,6 +243,7 @@ void updateState()
             pointDevice.clearTags();
             pointDevice.addTag("room_number", roomNumber);
             lcd.clear();
+            publishDeviceRoom();
             break;
         default:
             Serial.println(F("ERROR: Unknown state"));
@@ -268,14 +270,14 @@ void readDht()
     lastTemperature = heatIndex;
     lastHumidity = humidity;
 
-    mqttClient.publish((mqttMainTopic + MQTT_TOPIC_TEMPERATURE).c_str(), String(lastTemperature), false, 0);
-    mqttClient.publish((mqttMainTopic + MQTT_TOPIC_HUMIDITY).c_str(), String(lastHumidity), false, 0);
+    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_TEMPERATURE).c_str(), String(lastTemperature), false, 0);
+    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_HUMIDITY).c_str(), String(lastHumidity), false, 0);
 }
 
 void readSignalStrength()
 {
     lastSignalStrength = WiFi.RSSI();
-    mqttClient.publish((mqttMainTopic + MQTT_TOPIC_SIGNAL).c_str(), String(lastSignalStrength), false, 0);
+    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_SIGNAL).c_str(), String(lastSignalStrength), false, 0);
 }
 
 void updateDisplay()
@@ -571,6 +573,7 @@ void handleChangeRoom()
 
     server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
     server.send(301);
+    publishDeviceRoom();
 }
 
 void handlePause()
@@ -667,5 +670,53 @@ void connectToMqttBroker()
     size_t length = serializeJson(json, buffer);
     mqttClient.publish(MQTT_TOPIC_DEVICES, buffer, length, false, 2);
 
-    mqttClient.subscribe(mqttControlTopic);
+    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_ROOM_UPDATE);
+}
+
+void onMqttMessageReceived(String& topic, String& payload)
+{
+    JsonDocument json;
+    deserializeJson(json, payload);
+    Serial.println("Received MQTT message: " + topic + " - " + payload);
+
+    if (topic.endsWith(MQTT_SUBTOPIC_ROOM_UPDATE))
+        mqttUpdateRoom(payload);
+}
+
+void publishDeviceRoom()
+{
+    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_ROOM).c_str(), String(roomNumber), true, 2);
+}
+
+void mqttUpdateRoom(String room)
+{
+    int newRoomNumber = room.charAt(0) - 48;
+    if (newRoomNumber < 1 || newRoomNumber > MAX_ROOMS)
+    {
+        publishRequestResult((mqttMainTopic + MQTT_SUBTOPIC_ROOM_UPDATE + MQTT_SUBTOPIC_ACK).c_str(), "error", F("Room ID out of range"));
+        return;
+    }
+
+    roomNumber = newRoomNumber;
+
+    pointDevice.clearTags();
+    pointDevice.addTag("room_number", roomNumber);
+    publishRequestResult((mqttMainTopic + MQTT_SUBTOPIC_ROOM_UPDATE + MQTT_SUBTOPIC_ACK).c_str(), "ok");
+    publishDeviceRoom();
+}
+
+void publishRequestResult(const char* topic, String result)
+{
+    publishRequestResult(topic, result, "");
+}
+
+void publishRequestResult(const char* topic, String result, String error)
+{
+    JsonDocument json;
+    json["result"] = result;
+    if (result == F("error"))
+        json["error"] = error;
+    char buffer[MQTT_BUFFER_SIZE];
+    size_t length = serializeJson(json, buffer);
+    mqttClient.publish(topic, buffer, length, false, 0);
 }

@@ -23,8 +23,8 @@
         </div>
         <div id="main_container" hidden>
             <h1>Last readings:</h1>
-            <p>Status: paused</p>
-            <p>Room: #roomNumber</p>
+            <p>Status: <span id="status">paused</span></p>
+            <p>Room: #<span id="room_number">-1</span></p>
             <p>
                 <img style="vertical-align: middle; padding-right: 0.5em" width="25" height="25" id="temperature_warning" src="/images/warning_50dp.png" hidden/>
                 Temperature: <span id="last_temperature">0</span>&deg;C
@@ -43,14 +43,12 @@
             </form>
             <br>
             <h1>Update room ID:</h1>
-            <form action="/change_room" method="post">
-                <p>
-                    <label for="room_number">Room: #</label>
-                    <input type="number" id="room_number" name="room_number" step="1" min="1" max="MAX_ROOMS" value="roomNumber"/>
-                </p>
-                <br>
-                <input class="button" type="submit" value="Update"/>
-            </form>
+            <p>
+                <label for="new_room_number">Room: #</label>
+                <input type="number" id="new_room_number" name="new_room_number" step="1" min="1" value="roomNumber"/>
+            </p>
+            <br>
+            <button id="update_room" type="button">Update</button>
             <br>
             <h1>Configure thresholds:</h1>
             <form action="/set_thresholds" method="post">
