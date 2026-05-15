@@ -237,6 +237,7 @@ void updateState()
         case CONFIG_SIGNAL_STRENGTH:
             state = CONFIG_ROOM_NUMBER;
             lcd.clear();
+            publishThresholds();
             break;
         case CONFIG_ROOM_NUMBER:
             state = NORMAL;
@@ -545,6 +546,7 @@ void handleSetThresholds()
 
     server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
     server.send(301);
+    publishThresholds();
 }
 
 void handleChangeRoom()
@@ -581,7 +583,7 @@ void handlePause()
     state = PAUSED;
     server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
     server.send(301);
-    mqttUpdateActive();
+    publishDeviceActive();
 }
 
 void handleResume()
@@ -589,7 +591,7 @@ void handleResume()
     state = NORMAL;
     server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
     server.send(301);
-    mqttUpdateActive();
+    publishDeviceActive();
 }
 
 String getErrorPage(String errorMessage)
@@ -671,9 +673,13 @@ void connectToMqttBroker()
     char buffer[MQTT_BUFFER_SIZE];
     size_t length = serializeJson(json, buffer);
     mqttClient.publish(MQTT_TOPIC_DEVICES, buffer, length, false, 2);
-    mqttUpdateActive();
+    publishDeviceActive();
 
     mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_ROOM_UPDATE);
+    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_ACTIVE_UPDATE);
+    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MIN_TEMP_UPDATE);
+    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MAX_TEMP_UPDATE);
+    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_SIGNAL_UPDATE);
 }
 
 void onMqttMessageReceived(String& topic, String& payload)
@@ -683,12 +689,17 @@ void onMqttMessageReceived(String& topic, String& payload)
     Serial.println("Received MQTT message: " + topic + " - " + payload);
 
     if (topic.endsWith(MQTT_SUBTOPIC_ROOM_UPDATE))
-        mqttUpdateRoom(payload);
+        mqttUpdateRoom(topic, payload);
     else if (topic.endsWith(MQTT_SUBTOPIC_ACTIVE_UPDATE))
         mqttUpdateActive(payload);
-    else {
+    else if (topic.endsWith(MQTT_SUBTOPIC_THRESHOLDS_MIN_TEMP_UPDATE))
+        mqttUpdateTemperatureMinThreshold(topic, payload);
+    else if (topic.endsWith(MQTT_SUBTOPIC_THRESHOLDS_MAX_TEMP_UPDATE))
+        mqttUpdateTemperatureMaxThreshold(topic, payload);
+    else if (topic.endsWith(MQTT_SUBTOPIC_THRESHOLDS_SIGNAL_UPDATE))
+        mqttUpdateSignalStrengthThreshold(topic, payload);
+    else
         Serial.println("Ignored");
-    }
 }
 
 void publishDeviceRoom()
@@ -696,12 +707,12 @@ void publishDeviceRoom()
     mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_ROOM).c_str(), String(roomNumber), true, 2);
 }
 
-void mqttUpdateRoom(String room)
+void mqttUpdateRoom(String topic, String room)
 {
     int newRoomNumber = room.charAt(0) - 48;
     if (newRoomNumber < 1 || newRoomNumber > MAX_ROOMS)
     {
-        publishRequestResult((mqttMainTopic + MQTT_SUBTOPIC_ROOM_UPDATE + MQTT_SUBTOPIC_ACK).c_str(), "error", F("Room ID out of range"));
+        publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), "error", F("Room ID out of range"));
         return;
     }
 
@@ -709,7 +720,7 @@ void mqttUpdateRoom(String room)
 
     pointDevice.clearTags();
     pointDevice.addTag("room_number", roomNumber);
-    publishRequestResult((mqttMainTopic + MQTT_SUBTOPIC_ROOM_UPDATE + MQTT_SUBTOPIC_ACK).c_str(), "ok");
+    publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), "ok");
     publishDeviceRoom();
 }
 
@@ -736,10 +747,10 @@ void mqttUpdateActive(String active)
         state = NORMAL;
     else
         state = PAUSED;
-    mqttUpdateActive();
+    publishDeviceActive();
 }
 
-void mqttUpdateActive()
+void publishDeviceActive()
 {
     String active;
     if (state != PAUSED)
@@ -747,4 +758,58 @@ void mqttUpdateActive()
     else
         active = F("false");
     mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_ACTIVE).c_str(), active, true, 2);
+}
+
+void mqttUpdateTemperatureMinThreshold(String topic, String threshold)
+{
+    float newLowTemperature = threshold.toFloat();
+    if (newLowTemperature >= highTemperatureThreshold)
+    {
+        publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("The low temperature threshold must be lower than the high temperature threshold"));
+        return;
+    }
+    if (newLowTemperature < TEMPERATURE_THRESHOLD_MIN || newLowTemperature > TEMPERATURE_THRESHOLD_MAX)
+    {
+        publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("Low temperature threshold out of range"));
+        return;
+    }
+
+    lowTemperatureThreshold = newLowTemperature;
+    publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("ok"), "");
+    publishThresholds();
+}
+
+void mqttUpdateTemperatureMaxThreshold(String topic, String threshold)
+{
+    float newHighTemperature = threshold.toFloat();
+    if (newHighTemperature < TEMPERATURE_THRESHOLD_MIN || newHighTemperature > TEMPERATURE_THRESHOLD_MAX)
+    {
+        publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("High temperature threshold out of range"));
+        return;
+    }
+
+    highTemperatureThreshold = newHighTemperature;
+    publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("ok"), "");
+    publishThresholds();
+}
+
+void mqttUpdateSignalStrengthThreshold(String topic, String threshold)
+{
+    int newSignalStrength = threshold.toInt();
+    if (newSignalStrength < SIGNAL_STRENGTH_THRESHOLD_MAX || newSignalStrength > SIGNAL_STRENGTH_THRESHOLD_MIN)
+    {
+        publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("Signal strength threshold out of range"));
+        return;
+    }
+
+    signalStrengthThreshold = newSignalStrength;
+    publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("ok"), "");
+    publishThresholds();
+}
+
+void publishThresholds()
+{
+    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MIN_TEMP).c_str(), String(lowTemperatureThreshold), true, 0);
+    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MAX_TEMP).c_str(), String(highTemperatureThreshold), true, 0);
+    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_SIGNAL).c_str(), String(signalStrengthThreshold), true, 0);
 }

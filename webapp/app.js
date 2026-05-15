@@ -42,6 +42,8 @@ client.on("message", (topic, message) => {
         handleMqttDevice(message);
     else if (topic.endsWith("/room"))
         restoreDeviceRoom(topic, message);
+    else if (topic.includes("/thresholds/"))
+        restoreThresholds(topic, message);
 });
 
 function subscribeTopic(topic) {
@@ -68,6 +70,7 @@ function handleMqttDevice(message) {
             }
         });
         subscribeTopic(`rms/${json.mac_address}/room`);
+        subscribeTopic(`rms/${json.mac_address}/thresholds/+`);
     } else if (json.status === "disconnected") {
         client.unsubscribe(deviceTopic, (err) => {
             if (err)
@@ -92,3 +95,18 @@ function restoreDeviceRoom(topic, message) {
         }
     });
 }
+
+function restoreThresholds(topic, message) {
+
+    let newTopic = topic + "/update";
+    let previousTopic = topic.substring(0, topic.lastIndexOf("/"));
+    client.unsubscribe(previousTopic + "/+", (err) => {
+        if (err)
+            console.error(err);
+        else {
+            console.log(`Unsubscribed from ${topic}`);
+            client.publish(newTopic, message)
+        }
+    });
+}
+

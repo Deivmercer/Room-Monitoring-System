@@ -32,20 +32,32 @@ button,
     margin: 0px auto 35px;
     cursor: pointer;
     border-radius: 4px;
-}
 
-button:hover,
-.button:hover {
-    background-color: #199e83;
-}
+    &:hover {
+        background-color: #199e83;
+    }
 
-button:active,
-.button:active {
-    background-color: #158c75;
+    &:active {
+        background-color: #158c75;
+    }
 }
 
 p {
     font-size: 14px;
     color: #888;
     margin-bottom: 10px;
+}
+
+.text-with-image {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.25em;
+}
+
+.warning {
+    vertical-align: middle;
+    padding-right: 0.5em;
+    width: 25px;
+    height: 25px;
 }

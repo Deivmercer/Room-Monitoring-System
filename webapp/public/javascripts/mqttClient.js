@@ -3,6 +3,7 @@ const MQTT_TOPIC_DEVICE = "rms/devices"
 const MQTT_SUBTOPIC_SENSORS = "/sensors/#"
 const MQTT_SUBTOPIC_ROOM = "/room"
 const MQTT_SUBTOPIC_ACTIVE = "/active"
+const MQTT_SUBTOPIC_THRESHOLDS = "/thresholds/+"
 let client;
 
 function mqttConnect(clientId, username, password, callback) {
@@ -31,13 +32,18 @@ function mqttConnect(clientId, username, password, callback) {
                 client.unsubscribe(topic, (err) => {
                     if (err)
                         console.log(err);
-                    else
+                    else {
                         console.log(`Unsubscribed from ${topic}`);
+                        deviceStatus.innerText = "not connected";
+                    }
                 });
             }
         } else if (topic.includes("/sensors/")) {
             let type = topic.split("/sensors/")[1];
             onDataReceived(message, type);
+        } else if (topic.includes("/thresholds/")) {
+            let type = topic.split("/thresholds/")[1];
+            onThresholdReceived(message, type);
         } else if (topic.endsWith(MQTT_SUBTOPIC_ROOM))
             onRoomUpdated(message)
         else if (topic.endsWith(MQTT_SUBTOPIC_ACTIVE))
@@ -54,6 +60,7 @@ function mqttSubscribeDevice(device) {
     subscribeTopic(mainTopic + MQTT_SUBTOPIC_SENSORS);
     subscribeTopic(mainTopic + MQTT_SUBTOPIC_ROOM);
     subscribeTopic(mainTopic + MQTT_SUBTOPIC_ACTIVE);
+    subscribeTopic(mainTopic + MQTT_SUBTOPIC_THRESHOLDS);
 }
 
 function subscribeTopic(topic) {
@@ -68,6 +75,7 @@ function subscribeTopic(topic) {
 
 function publishRoomNumber() {
 
+    // TODO: read the ack
     client.publish(`rms/${deviceId}/room/update`, newRoomNumber.value);
 }
 
@@ -81,3 +89,10 @@ function pauseDevice() {
     client.publish(`rms/${deviceId}/active/update`, "false");
 }
 
+function publishThresholds() {
+
+    // TODO: read the ack
+    client.publish(`rms/${deviceId}/thresholds/min_temperature/update`, lowTemperature.value);
+    client.publish(`rms/${deviceId}/thresholds/max_temperature/update`, highTemperature.value);
+    client.publish(`rms/${deviceId}/thresholds/signal_strength/update`, signalStrength.value);
+}
