@@ -1,4 +1,5 @@
 const MQTT_BROKER_URL = "ws://davemercer.moe:9001"; // Browsers only support websockets
+const MQTT_DEVICE_TOPIC = "rms/devices"
 let client;
 
 function mqttConnect(clientId, username, password, callback) {
@@ -14,17 +15,12 @@ function mqttConnect(clientId, username, password, callback) {
 
     client.on("connect", () => {
         callback();
-        client.subscribe("rms/devices", (err) => {
-            if (err)
-                console.log(err);
-            else
-                console.log("Subscribed to rms/devices");
-        })
+        subscribeTopic(MQTT_DEVICE_TOPIC);
     });
 
     client.on("message", (topic, message) => {
-        let json = JSON.parse(message);
-        if (topic === "rms/devices") {
+        if (topic === MQTT_DEVICE_TOPIC) {
+            let json = JSON.parse(message);
             if (json.status === "connected")
                 mqttSubscribeDevice(json.mac_address);
             else if (json.status === "disconnected") {
@@ -36,16 +32,22 @@ function mqttConnect(clientId, username, password, callback) {
                         console.log(`Unsubscribed from ${topic}`);
                 });
             }
-        } else if (topic.endsWith("/sensors"))
-            onDataReceived(json);
-        else
-            console.log(`Received message ${message.toString()} from topic ${topic}`);
+        } else if (topic.includes("/sensors/")) {
+            let type = topic.split("/sensors/")[1];
+            onDataReceived(message, type);
+        }
     });
 }
 
 function mqttSubscribeDevice(device) {
 
-    let topic = `rms/${device}/sensors`;
+    let mainTopic = `rms/${device}`;
+    subscribeTopic(mainTopic);
+    subscribeTopic(mainTopic + "/sensors/#");
+}
+
+function subscribeTopic(topic) {
+
     client.subscribe(topic, (err) => {
         if (err)
             console.log(err);

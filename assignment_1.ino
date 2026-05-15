@@ -26,7 +26,7 @@ Point pointDevice("room_status");
 
 MQTTClient mqttClient(MQTT_BUFFER_SIZE);
 WiFiClient networkClient;
-char mqttSensorsTopic[64];
+String mqttMainTopic;
 
 DHT dht = DHT(DHTPIN, DHTTYPE);
 
@@ -126,10 +126,9 @@ void loop()
             if (!updateData)
                 break;
             readDht();
-            lastSignalStrength = WiFi.RSSI();
+            readSignalStrength();
             updateDisplay();
             writeReadingsToDB();
-            publishSensorData();
             updateData = false;
             break;
         case CONFIG_LOW_TEMPERATURE:
@@ -268,6 +267,15 @@ void readDht()
     float heatIndex = dht.computeHeatIndex(temperature, humidity, false);
     lastTemperature = heatIndex;
     lastHumidity = humidity;
+
+    mqttClient.publish((mqttMainTopic + MQTT_TOPIC_TEMPERATURE).c_str(), String(lastTemperature), false, 0);
+    mqttClient.publish((mqttMainTopic + MQTT_TOPIC_HUMIDITY).c_str(), String(lastHumidity), false, 0);
+}
+
+void readSignalStrength()
+{
+    lastSignalStrength = WiFi.RSSI();
+    mqttClient.publish((mqttMainTopic + MQTT_TOPIC_SIGNAL).c_str(), String(lastSignalStrength), false, 0);
 }
 
 void updateDisplay()
@@ -634,8 +642,9 @@ void connectToMqttBroker()
 {
     char macAddress[18];
     strcpy(macAddress, WiFi.macAddress().c_str());
-    snprintf(mqttSensorsTopic, sizeof(mqttSensorsTopic), MQTT_TOPIC_SENSORS, macAddress);
-    snprintf(mqttControlTopic, sizeof(mqttControlTopic), MQTT_TOPIC_THRESHOLDS, macAddress);
+    char mainTopic[23];
+    snprintf(mainTopic, sizeof(mainTopic), MQTT_TOPIC_MAIN, macAddress);
+    mqttMainTopic = mainTopic;
 
     JsonDocument lwt;
     lwt["status"] = F("disconnected");
@@ -659,15 +668,4 @@ void connectToMqttBroker()
     mqttClient.publish(MQTT_TOPIC_DEVICES, buffer, length, false, 2);
 
     mqttClient.subscribe(mqttControlTopic);
-}
-
-void publishSensorData()
-{
-    JsonDocument json;
-    json["temperature"] = lastTemperature;
-    json["humidity"] = lastHumidity;
-    json["signal_strength"] = lastSignalStrength;
-    char buffer[MQTT_BUFFER_SIZE];
-    size_t length = serializeJson(json, buffer);
-    mqttClient.publish(mqttSensorsTopic, buffer, length, false, 0);
 }

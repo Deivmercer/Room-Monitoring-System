@@ -33,7 +33,20 @@ function checkConnectedDevices() {
 
 function onDataReceived(data) {
 
-    lastTemperature.innerText = data.temperature;
-    lastHumidity.innerText = data.humidity;
-    lastSignalStrength.innerText = data.signal_strength;
+function onDataReceived(data, type) {
+
+    console.log("type: " + type);
+    switch (type) {
+        case "temperature":
+            lastTemperature.innerText = data;
+            break;
+        case "humidity":
+            lastHumidity.innerText = data;
+            break;
+        case "signal":
+            lastSignalStrength.innerText = data;
+            break;
+        default:
+            console.error("Unknown type: " + type);
+    }
 }

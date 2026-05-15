@@ -25,13 +25,17 @@
 #define MAX_ROOMS 9
 
 #define MQTT_BUFFER_SIZE 256
+#define MQTT_TOPIC_MAIN "rms/%s"
 #define MQTT_TOPIC_DEVICES "rms/devices"
-#define MQTT_TOPIC_SENSORS "rms/%s/sensors"
+#define MQTT_TOPIC_TEMPERATURE "/sensors/temperature"
+#define MQTT_TOPIC_HUMIDITY "/sensors/humidity"
+#define MQTT_TOPIC_SIGNAL "/sensors/signal"
 
 void connectToWiFi();
 void updateState();
 void toggleReadingFlag();
 void readDht();
+void readSignalStrength();
 void updateDisplay();
 void configureLowTemperatureThreshold();
 void configureHighTemperatureThreshold();
