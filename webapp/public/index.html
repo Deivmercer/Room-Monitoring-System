@@ -19,11 +19,12 @@
                 <label for="password">Password: </label>
                 <input type="password" id="password" name="password" placeholder="Password"/>
             </p>
+            <br>
             <button id="login_button" type="button">Login</button>
         </div>
         <div id="main_container" hidden>
             <h1>Last readings:</h1>
-            <p>Status: <span id="status">paused</span></p>
+            <p>Status: <span id="status">not connected</span></p>
             <p>Room: #<span id="room_number">-1</span></p>
             <p>
                 <img style="vertical-align: middle; padding-right: 0.5em" width="25" height="25" id="temperature_warning" src="/images/warning_50dp.png" hidden/>
@@ -35,12 +36,8 @@
                 WiFi signal strength: <span id="last_signal_strength">0</span> dBm
             </p>
             <br>
-            <form action="/resume" method="post">
-                <input class="button" type="submit" value="Resume"/>
-            </form>
-            <form action="/pause" method="post">
-                <input class="button" type="submit" value="Pause"/>
-            </form>
+            <button id="resume_button" style="display: none">Resume</button>
+            <button id="pause_button">Pause</button>
             <br>
             <h1>Update room ID:</h1>
             <p>
@@ -69,7 +66,7 @@
             </form>
         </div>
         <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-        <script src="/javascripts/index.js"></script>
         <script src="/javascripts/mqttClient.js"></script>
+        <script src="/javascripts/index.js"></script>
     </body>
 </html>

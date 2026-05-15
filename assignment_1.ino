@@ -581,6 +581,7 @@ void handlePause()
     state = PAUSED;
     server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
     server.send(301);
+    mqttUpdateActive();
 }
 
 void handleResume()
@@ -588,6 +589,7 @@ void handleResume()
     state = NORMAL;
     server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
     server.send(301);
+    mqttUpdateActive();
 }
 
 String getErrorPage(String errorMessage)
@@ -669,6 +671,7 @@ void connectToMqttBroker()
     char buffer[MQTT_BUFFER_SIZE];
     size_t length = serializeJson(json, buffer);
     mqttClient.publish(MQTT_TOPIC_DEVICES, buffer, length, false, 2);
+    mqttUpdateActive();
 
     mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_ROOM_UPDATE);
 }
@@ -681,6 +684,11 @@ void onMqttMessageReceived(String& topic, String& payload)
 
     if (topic.endsWith(MQTT_SUBTOPIC_ROOM_UPDATE))
         mqttUpdateRoom(payload);
+    else if (topic.endsWith(MQTT_SUBTOPIC_ACTIVE_UPDATE))
+        mqttUpdateActive(payload);
+    else {
+        Serial.println("Ignored");
+    }
 }
 
 void publishDeviceRoom()
@@ -719,4 +727,24 @@ void publishRequestResult(const char* topic, String result, String error)
     char buffer[MQTT_BUFFER_SIZE];
     size_t length = serializeJson(json, buffer);
     mqttClient.publish(topic, buffer, length, false, 0);
+}
+
+void mqttUpdateActive(String active)
+{
+    bool isActive = active.equals("true");
+    if (isActive)
+        state = NORMAL;
+    else
+        state = PAUSED;
+    mqttUpdateActive();
+}
+
+void mqttUpdateActive()
+{
+    String active;
+    if (state != PAUSED)
+        active = F("true");
+    else
+        active = F("false");
+    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_ACTIVE).c_str(), active, true, 2);
 }

@@ -1,3 +1,6 @@
+// TODO: rinominare assignment_1.ino e assignment_1.h in assignment.ino e assignment.h
+//       (o anche rms.ino e rms.h o qualcosa del genere)
+
 #include "secrets.h"
 
 #define POTENTIOMETER A0
@@ -33,6 +36,15 @@
 #define MQTT_SUBTOPIC_SIGNAL "/sensors/signal"
 #define MQTT_SUBTOPIC_ROOM "/room"
 #define MQTT_SUBTOPIC_ROOM_UPDATE "/room/update"
+#define MQTT_SUBTOPIC_ACTIVE "/active"
+#define MQTT_SUBTOPIC_ACTIVE_UPDATE "/active/update"
+#define MQTT_TOPIC_THRESHOLDS "/thresholds"
+#define MQTT_TOPIC_THRESHOLDS_ACK "/thresholds/ack"
+#define MQTT_TOPIC_THRESHOLDS_TEMPERATURE "rms/%s/thresholds/temperature"
+#define MQTT_TOPIC_THRESHOLDS_TEMPERATURE_RESULT "rms/%s/thresholds/temperature/result"
+#define MQTT_TOPIC_THRESHOLDS_SIGNAL_STRENGTH "rms/%s/thresholds/signal_strength"
+#define MQTT_TOPIC_THRESHOLDS_SIGNAL_STRENGTH_RESULT "rms/%s/thresholds/signal_strength/result"
+
 
 void connectToWiFi();
 void updateState();
@@ -56,11 +68,12 @@ void writeReadingsToDB();
 String getErrorPage(String errorMessage);
 void connectToMqttBroker();
 void onMqttMessageReceived(String& topic, String& payload);
-void updateDeviceStatus();
 void publishDeviceRoom();
 void mqttUpdateRoom(String room);
 void publishRequestResult(const char* topic, String result);
 void publishRequestResult(const char* topic, String result, String error);
+void mqttUpdateActive(String status);
+void publishDeviceActive();
 
 enum State
 {

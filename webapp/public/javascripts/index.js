@@ -7,11 +7,16 @@ const lastHumidity = document.getElementById("last_humidity");
 const lastSignalStrength = document.getElementById("last_signal_strength");
 const roomNumber = document.getElementById("room_number");
 const newRoomNumber = document.getElementById("new_room_number");
+const deviceStatus = document.getElementById("status");
+const resumeButton = document.getElementById("resume_button");
+const pauseButton = document.getElementById("pause_button");
 document.getElementById("login_button").addEventListener("click", login);
 document.getElementById("update_room").addEventListener("click", publishRoomNumber);
+resumeButton.addEventListener("click", resumeDevice);
+pauseButton.addEventListener("click", pauseDevice);
 newRoomNumber.max = MAX_ROOM_NUMBER;
 
-let deviceId;
+let deviceId = "";
 
 function login() {
 
@@ -32,12 +37,26 @@ function checkConnectedDevices() {
         res.json().then(devices => {
             devices.forEach(device => {
                 deviceId = device;
+                deviceStatus.innerText = "active";
                 mqttSubscribeDevice(device);
             })
         })
     }).catch(err => {
         console.log(err)
     });
+}
+
+function onDeviceActiveReceived(data) {
+
+    if (data.toString() === "true") {
+        deviceStatus.innerText = "active";
+        pauseButton.style.display = "block";
+        resumeButton.style.display = "none";
+    } else {
+        deviceStatus.innerText = "paused";
+        resumeButton.style.display = "block";
+        pauseButton.style.display = "none";
+    }
 }
 
 function onDataReceived(data, type) {
@@ -60,9 +79,5 @@ function onDataReceived(data, type) {
 function onRoomUpdated(newRoom) {
 
     roomNumber.innerText = newRoom;
-}
-
-function publishRoomNumber() {
-
-    client.publish(`rms/${deviceId}/room/update`, newRoomNumber.value)
+    newRoomNumber.value = newRoom;
 }

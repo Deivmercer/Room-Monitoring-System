@@ -2,6 +2,7 @@ const MQTT_BROKER_URL = "ws://davemercer.moe:9001"; // Browsers only support web
 const MQTT_TOPIC_DEVICE = "rms/devices"
 const MQTT_SUBTOPIC_SENSORS = "/sensors/#"
 const MQTT_SUBTOPIC_ROOM = "/room"
+const MQTT_SUBTOPIC_ACTIVE = "/active"
 let client;
 
 function mqttConnect(clientId, username, password, callback) {
@@ -37,8 +38,12 @@ function mqttConnect(clientId, username, password, callback) {
         } else if (topic.includes("/sensors/")) {
             let type = topic.split("/sensors/")[1];
             onDataReceived(message, type);
-        } else if (topic.endsWith("/room"))
+        } else if (topic.endsWith(MQTT_SUBTOPIC_ROOM))
             onRoomUpdated(message)
+        else if (topic.endsWith(MQTT_SUBTOPIC_ACTIVE))
+            onDeviceActiveReceived(message);
+        else
+            console.log("Unknown topic: " + topic);
     });
 }
 
@@ -48,6 +53,7 @@ function mqttSubscribeDevice(device) {
     subscribeTopic(mainTopic);
     subscribeTopic(mainTopic + MQTT_SUBTOPIC_SENSORS);
     subscribeTopic(mainTopic + MQTT_SUBTOPIC_ROOM);
+    subscribeTopic(mainTopic + MQTT_SUBTOPIC_ACTIVE);
 }
 
 function subscribeTopic(topic) {
@@ -59,3 +65,19 @@ function subscribeTopic(topic) {
             console.log(`Subscribed to ${topic}`);
     });
 }
+
+function publishRoomNumber() {
+
+    client.publish(`rms/${deviceId}/room/update`, newRoomNumber.value);
+}
+
+function resumeDevice() {
+
+    client.publish(`rms/${deviceId}/active/update`, "true");
+}
+
+function pauseDevice() {
+
+    client.publish(`rms/${deviceId}/active/update`, "false");
+}
+

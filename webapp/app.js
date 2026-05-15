@@ -83,11 +83,12 @@ function handleMqttDevice(message) {
 function restoreDeviceRoom(topic, message) {
 
     let newTopic = topic + "/update";
-    client.publish(newTopic, message)
     client.unsubscribe(topic, (err) => {
         if (err)
             console.error(err);
-        else
+        else {
             console.log(`Unsubscribed from ${topic}`);
+            client.publish(newTopic, message)
+        }
     });
 }
