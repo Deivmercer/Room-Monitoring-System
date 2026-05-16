@@ -1,23 +1,13 @@
 #include <DHT.h>
-#include <ESP8266WiFi.h>
 #include <Ticker.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <InfluxDbClient.h>
 #include "rms.h"
+#include "wifi_client.h"
 #include "webserver.h"
 #include "mqtt_client.h"
 #include "secrets.h"
-
-char ssid[] = SECRET_SSID;
-char password[] = SECRET_PASS;
-#ifdef IP
-IPAddress ip(IP);
-IPAddress subnet(SUBNET);
-IPAddress dns(DNS);
-IPAddress gateway(GATEWAY);
-#endif
-WiFiClient client;
 
 InfluxDBClient client_idb(INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN);
 Point pointDevice("room_status");
@@ -31,7 +21,6 @@ bool updateData = false;
 
 State state;
 
-bool isActive = true;
 String roomNumber = DEFAULT_ROOM_NUMBER;
 float lowTemperatureThreshold = -1.0;
 float highTemperatureThreshold = 27.0;
@@ -44,8 +33,7 @@ void setup()
 {
     dht.begin();
 
-    WiFi.mode(WIFI_STA);
-    WiFi.setPhyMode(WIFI_PHY_MODE_11G);
+    setupWifi();
 
     // Initializing the LCD display
     Wire.begin();
@@ -92,7 +80,7 @@ void loop()
     static bool waitButtonReleased = false;
 
     // Checking if WiFi is connected
-    if (WiFi.status() != WL_CONNECTED)
+    if (isWifiConnected())
         connectToWiFi();
 
     byte buttonState = digitalRead(BUTTON);
@@ -137,55 +125,6 @@ void loop()
     updateLEDs();
     loopWebserver();
     loopMqttClient();
-}
-
-void connectToWiFi()
-{
-    lcd.clear();
-    Serial.print(F("\nConnecting to SSID: "));
-    Serial.println(SECRET_SSID);
-
-#ifdef IP
-    WiFi.config(ip, dns, gateway, subnet);
-#endif
-
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        switch(WiFi.status())
-        {
-            case WL_NO_SSID_AVAIL:
-                printToLCD("SSID not in", "range. Retrying");
-                delay(5000);
-                lcd.clear();
-                break;
-            case WL_CONNECT_FAILED:
-                printToLCD("WiFi connection", "failed. Retrying");
-                delay(5000);
-                lcd.clear();
-                break;
-            case WL_WRONG_PASSWORD:
-                printToLCD("WiFi password", "is wrong.");
-                while(true)
-                    delay(100);
-                break;
-            case WL_CONNECTION_LOST:
-                printToLCD("WiFi connection", "lost");
-                delay(250);
-                lcd.clear();
-                break;
-            default:
-                printToLCD("Setup in", "progress...");
-                Serial.print(F("."));
-                delay(250);
-                break;
-        }
-    }
-
-    Serial.println();
-    printToLCD("Connected. IP:", WiFi.localIP().toString());
-    delay(5000);
-    lcd.clear();
 }
 
 void updateState()
@@ -257,7 +196,7 @@ void readDht()
 
 void readSignalStrength()
 {
-    lastSignalStrength = WiFi.RSSI();
+    lastSignalStrength = getSignalStrength();
     mqttPublishData(MQTT_SUBTOPIC_SIGNAL, String(lastSignalStrength));
 }
 
@@ -385,6 +324,11 @@ float linearMapPotentiometerf(int value, float min, float max)
     return min + (value - POTENTIOMETER_MIN) * (max - min) / (POTENTIOMETER_MAX - POTENTIOMETER_MIN);
 }
 
+void clearLcd()
+{
+    lcd.clear();
+}
+
 void writeReadingsToDB()
 {
     // Checking server connection
@@ -474,9 +418,4 @@ void setRoomNumber(int newRoomNumber)
 void setPaused(bool paused)
 {
     state = paused ? PAUSED : NORMAL;
-}
-
-String getMacAddress()
-{
-    return WiFi.macAddress();
 }

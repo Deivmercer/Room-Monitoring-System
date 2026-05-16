@@ -32,7 +32,6 @@ enum State
     PAUSED
 };
 
-void connectToWiFi();
 void updateState();
 void toggleReadingFlag();
 void readDht();
@@ -44,6 +43,7 @@ void configureSignalStrengthThreshold();
 void configureRoomNumber();
 void updateLEDs();
 void printToLCD(String displayLine1, String displayLine2);
+void clearLcd();
 void writeReadingsToDB();
 State getState();
 float getLastTemperature();
@@ -58,4 +58,3 @@ void setSignalStrengthThreshold(int newSignalStrengthThreshold);
 String getRoomNumber();
 void setRoomNumber(int newRoomNumber);
 void setPaused(bool paused);
-String getMacAddress();

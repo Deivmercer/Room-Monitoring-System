@@ -4,6 +4,7 @@
 #include <ArduinoJson.h>
 #include "mqtt_client.h"
 #include "rms.h"
+#include "wifi_client.h"
 #include "secrets.h"
 
 WiFiClient networkClient;
