@@ -42,6 +42,16 @@
 #define MQTT_SUBTOPIC_THRESHOLDS_SIGNAL "/thresholds/signal_strength"
 #define MQTT_SUBTOPIC_THRESHOLDS_SIGNAL_UPDATE "/thresholds/signal_strength/update"
 
+enum State
+{
+    NORMAL,
+    CONFIG_LOW_TEMPERATURE,
+    CONFIG_HIGH_TEMPERATURE,
+    CONFIG_SIGNAL_STRENGTH,
+    CONFIG_ROOM_NUMBER,
+    PAUSED
+};
+
 void connectToWiFi();
 void updateState();
 void toggleReadingFlag();
@@ -54,14 +64,7 @@ void configureSignalStrengthThreshold();
 void configureRoomNumber();
 void updateLEDs();
 void printToLCD(String displayLine1, String displayLine2);
-void handleRoot();
-void handleNotFound();
-void handleSetThresholds();
-void handlePause();
-void handleResume();
-void handleChangeRoom();
 void writeReadingsToDB();
-String getErrorPage(String errorMessage);
 void connectToMqttBroker();
 void onMqttMessageReceived(String& topic, String& payload);
 void publishDeviceRoom();
@@ -74,13 +77,17 @@ void mqttUpdateTemperatureMinThreshold(String topic, String threshold);
 void mqttUpdateTemperatureMaxThreshold(String topic, String threshold);
 void mqttUpdateSignalStrengthThreshold(String topic, String threshold);
 void publishThresholds();
-
-enum State
-{
-    NORMAL,
-    CONFIG_LOW_TEMPERATURE,
-    CONFIG_HIGH_TEMPERATURE,
-    CONFIG_SIGNAL_STRENGTH,
-    CONFIG_ROOM_NUMBER,
-    PAUSED
-};
+State getState();
+void setState(State newState);
+float getLastTemperature();
+float getLastHumidity();
+int getLastSignalStrength();
+float getLowTemperatureThreshold();
+void setLowTemperatureThreshold(float newLowTemperatureThreshold);
+float getHighTemperatureThreshold();
+void setHighTemperatureThreshold(float newHighTemperatureThreshold);
+int getSignalStrengthThreshold();
+void setSignalStrengthThreshold(int newSignalStrengthThreshold);
+String getRoomNumber();
+void setRoomNumber(int newRoomNumber);
+void setPaused(bool paused);
