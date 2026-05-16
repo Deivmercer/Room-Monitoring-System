@@ -31,23 +31,28 @@ function mqttConnect(clientId, username, password, callback) {
                 let topic = `rms/${json.mac_address}/sensors`;
                 client.unsubscribe(topic, (err) => {
                     if (err)
-                        console.log(err);
+                        console.error(err);
                     else {
                         console.log(`Unsubscribed from ${topic}`);
-                        deviceStatus.innerText = "not connected";
+                        onDeviceDisconnected(json.mac_address);
                     }
                 });
             }
-        } else if (topic.includes("/sensors/")) {
+
+            return;
+        }
+
+        let deviceId = topic.split("/")[1];
+        if (topic.includes("/sensors/")) {
             let type = topic.split("/sensors/")[1];
-            onDataReceived(message, type);
+            onDataReceived(message, type, deviceId);
         } else if (topic.includes("/thresholds/")) {
             let type = topic.split("/thresholds/")[1];
-            onThresholdReceived(message, type);
+            onThresholdReceived(message, type, deviceId);
         } else if (topic.endsWith(MQTT_SUBTOPIC_ROOM))
-            onRoomUpdated(message)
+            onRoomUpdated(message, deviceId)
         else if (topic.endsWith(MQTT_SUBTOPIC_ACTIVE))
-            onDeviceActiveReceived(message);
+            onDeviceActiveReceived(message.toString(), deviceId);
         else
             console.log("Unknown topic: " + topic);
     });
@@ -67,7 +72,7 @@ function subscribeTopic(topic) {
 
     client.subscribe(topic, (err) => {
         if (err)
-            console.log(err);
+            console.error(err);
         else
             console.log(`Subscribed to ${topic}`);
     });

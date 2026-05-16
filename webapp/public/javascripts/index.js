@@ -32,10 +32,22 @@ highTemperature.max = MAX_TEMPERATURE_THRESHOLD;
 signalStrength.min = MAX_SIGNAL_STRENGTH_THRESHOLD;
 signalStrength.max = MIN_SIGNAL_STRENGTH_THRESHOLD;
 
-let deviceId = "";
-let minTemperatureThreshold = 0;
-let maxTemperatureThreshold = 0;
-let signalStrengthThreshold = 0;
+let currentRoom = -1;
+let devices = ["", "", "", "", "", "", "", "", ""];
+let minTemperatureThreshold = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+let maxTemperatureThreshold = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+let signalStrengthThreshold = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+let lastTemperatureValues = [null, null, null, null, null, null, null, null, null];
+let lastHumidityValues = [null, null, null, null, null, null, null, null, null];
+let lastSignalStrengthValues = [null, null, null, null, null, null, null, null, null];
+
+const roomButtons = document.querySelectorAll(".room");
+for (let room of roomButtons) {
+    room.addEventListener("click", () => {
+        changeRoom(room);
+    });
+}
+changeRoom(roomButtons[0]);
 
 function login() {
 
@@ -55,19 +67,20 @@ function checkConnectedDevices() {
     fetch("/devices").then(res => {
         res.json().then(devices => {
             devices.forEach(device => {
-                deviceId = device;
-                deviceStatus.innerText = "active";
                 mqttSubscribeDevice(device);
             })
         })
     }).catch(err => {
-        console.log(err)
+        console.error(err)
     });
 }
 
-function onDeviceActiveReceived(data) {
+function onDeviceActiveReceived(isActive, deviceId) {
 
-    if (data.toString() === "true") {
+    if (devices[currentRoom] !== deviceId)
+        return;
+
+    if (isActive === "true") {
         deviceStatus.innerText = "active";
         pauseButton.style.display = "block";
         resumeButton.style.display = "none";
@@ -78,53 +91,131 @@ function onDeviceActiveReceived(data) {
     }
 }
 
-function onDataReceived(data, type) {
+function onDataReceived(data, type, deviceId) {
 
+    let room = devices.indexOf(deviceId);
+    let newValue = Number(data);
     switch (type) {
         case "temperature":
-            lastTemperature.innerText = data;
-            if (data < minTemperatureThreshold || data > maxTemperatureThreshold)
-                temperatureWarning.style.display = "block";
-            else
-                temperatureWarning.style.display = "none";
+            lastTemperatureValues[room] = newValue;
+            if (room === currentRoom) {
+                lastTemperature.innerText = data;
+                if (newValue < minTemperatureThreshold[room] || newValue > maxTemperatureThreshold[room])
+                    temperatureWarning.style.display = "block";
+                else
+                    temperatureWarning.style.display = "none";
+            }
             break;
         case "humidity":
-            lastHumidity.innerText = data;
+            lastHumidityValues[room] = newValue;
+            if (room === currentRoom)
+                lastHumidity.innerText = data;
             break;
         case "signal":
-            lastSignalStrength.innerText = data;
-            if (data > signalStrengthThreshold)
-                signalStrengthWarning.style.display = "block";
-            else
-                signalStrengthWarning.style.display = "none";
+            lastSignalStrengthValues[room] = newValue;
+            if (room === currentRoom) {
+                lastSignalStrength.innerText = data;
+                if (newValue > signalStrengthThreshold[room])
+                    signalStrengthWarning.style.display = "block";
+                else
+                    signalStrengthWarning.style.display = "none";
+            }
             break;
         default:
             console.error("Unknown type: " + type);
     }
 }
 
-function onThresholdReceived(data, type) {
+function onThresholdReceived(data, type, deviceId) {
 
+    let room = devices.indexOf(deviceId);
     switch (type) {
         case "min_temperature":
-            minTemperatureThreshold = data;
-            lowTemperature.value = data;
+            minTemperatureThreshold[room] = data;
+            if (room === currentRoom)
+                lowTemperature.value = data;
             break;
         case "max_temperature":
-            maxTemperatureThreshold = data;
-            highTemperature.value = data;
+            maxTemperatureThreshold[room] = data;
+            if (room === currentRoom)
+                highTemperature.value = data;
             break;
         case "signal_strength":
-            signalStrengthThreshold = data;
-            signalStrength.value = data;
+            signalStrengthThreshold[room] = data;
+            if (room === currentRoom)
+                signalStrength.value = data;
             break;
         default:
             console.error("Unknown type: " + type);
     }
 }
 
-function onRoomUpdated(newRoom) {
+function onRoomUpdated(newRoom, deviceId) {
 
+    let previousRoom = devices.indexOf(deviceId);
+    if (previousRoom !== -1)
+        devices[previousRoom] = "";
+    devices[newRoom - 1] = deviceId;
+}
+
+function changeRoom(room) {
+
+    room.classList.remove("room");
+    if (currentRoom !== -1) {
+        let button = roomButtons[currentRoom];
+        button.classList.add("room");
+    }
+    let newRoom = room.innerText;
+    currentRoom = Number(newRoom - 1);
     roomNumber.innerText = newRoom;
+
+    let status;
+    if (devices[currentRoom])
+        status = "active";
+    else
+        status = "not connected";
+    deviceStatus.innerText = status;
+
+    if (lastTemperatureValues[currentRoom] === null) {
+        lastTemperature.innerText = "--";
+        temperatureWarning.style.display = "none";
+    } else {
+        let value = lastTemperatureValues[currentRoom];
+        lastTemperature.innerText = value;
+        if (value < minTemperatureThreshold[room] || value > maxTemperatureThreshold[room])
+            temperatureWarning.style.display = "block";
+        else
+            temperatureWarning.style.display = "none";
+    }
+
+    if (lastHumidityValues[currentRoom] === null)
+        lastHumidity.innerText = "--";
+    else
+        lastHumidity.innerText = lastHumidityValues[currentRoom];
+
+    if (lastSignalStrengthValues[currentRoom] === null) {
+        lastSignalStrength.innerText = "--";
+        signalStrengthWarning.style.display = "none";
+    } else {
+        let value = lastSignalStrengthValues[currentRoom];
+        lastSignalStrength.innerText = value
+        if (value > signalStrengthThreshold[room])
+            signalStrengthWarning.style.display = "block";
+        else
+            signalStrengthWarning.style.display = "none";
+    }
+
     newRoomNumber.value = newRoom;
+    lowTemperature.value = minTemperatureThreshold[currentRoom];
+    highTemperature.value = maxTemperatureThreshold[currentRoom];
+    signalStrength.value = signalStrengthThreshold[currentRoom];
+}
+
+function onDeviceDisconnected(deviceId) {
+
+    let room = devices.indexOf(deviceId);
+    devices[room] = "";
+
+    if (room === currentRoom)
+        deviceStatus.innerText = "not connected";
 }

@@ -61,3 +61,19 @@ p {
     width: 25px;
     height: 25px;
 }
+
+.room-list {
+    display: flex;
+    justify-content: center;
+    gap: 0.25em;
+}
+
+.room {
+    color: #1a73e8;
+    text-decoration: underline;
+    cursor: pointer;
+
+    &:hover {
+        color: #1558b0;
+    }
+}

@@ -23,17 +23,29 @@
             <button id="login_button" type="button">Login</button>
         </div>
         <div id="main_container" hidden>
+            <h1>Rooms</h1>
+            <div class="room-list">
+                <span class="room">1</span>
+                <span class="room">2</span>
+                <span class="room">3</span>
+                <span class="room">4</span>
+                <span class="room">5</span>
+                <span class="room">6</span>
+                <span class="room">7</span>
+                <span class="room">8</span>
+                <span class="room">9</span>
+            </div>
             <h1>Last readings:</h1>
             <p>Status: <span id="status">not connected</span></p>
             <p>Room: #<span id="room_number">-1</span></p>
             <p class="text-with-image">
                 <img class="warning" id="temperature_warning" src="/images/warning_50dp.png" hidden/>
-                Temperature: <span id="last_temperature">0</span>&deg;C
+                Temperature: <span id="last_temperature">--</span>&deg;C
             </p>
-            <p>Humidity: <span id="last_humidity">0</span>%</p>
+            <p>Humidity: <span id="last_humidity">--</span>%</p>
             <p class="text-with-image">
                 <img class="warning" id="signal_strength_warning" src="/images/warning_50dp.png" hidden/>
-                WiFi signal strength: <span id="last_signal_strength">0</span> dBm
+                WiFi signal strength: <span id="last_signal_strength">--</span> dBm
             </p>
             <br>
             <button id="resume_button" style="display: none">Resume</button>
