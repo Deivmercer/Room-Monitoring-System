@@ -79,10 +79,6 @@ void loop()
     // Will be used to prevent the the system state to keep on changing when the button is being hold pressed
     static bool waitButtonReleased = false;
 
-    // Checking if WiFi is connected
-    if (isWifiConnected())
-        connectToWiFi();
-
     byte buttonState = digitalRead(BUTTON);
     if (buttonState == LOW && !waitButtonReleased)
     {
