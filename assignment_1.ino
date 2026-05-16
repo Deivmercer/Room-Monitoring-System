@@ -4,10 +4,10 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <InfluxDbClient.h>
-#include <MQTT.h>
-#include <ArduinoJson.h>
 #include "assignment_1.h"
 #include "webserver.h"
+#include "mqtt_client.h"
+#include "secrets.h"
 
 char ssid[] = SECRET_SSID;
 char password[] = SECRET_PASS;
@@ -21,10 +21,6 @@ WiFiClient client;
 
 InfluxDBClient client_idb(INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN);
 Point pointDevice("room_status");
-
-MQTTClient mqttClient(MQTT_BUFFER_SIZE);
-WiFiClient networkClient;
-String mqttMainTopic;
 
 DHT dht = DHT(DHTPIN, DHTTYPE);
 
@@ -85,10 +81,7 @@ void setup()
     pointDevice.addTag("room_number", roomNumber);
 
     setupWebserver();
-
-    // setup MQTT
-    mqttClient.begin(MQTT_BROKER_IP, 1883, networkClient);
-    mqttClient.onMessage(onMqttMessageReceived);
+    setupMqtt();
 
     Serial.begin(115200);
 }
@@ -101,8 +94,6 @@ void loop()
     // Checking if WiFi is connected
     if (WiFi.status() != WL_CONNECTED)
         connectToWiFi();
-    if (!mqttClient.connected())
-        connectToMqttBroker();
 
     byte buttonState = digitalRead(BUTTON);
     if (buttonState == LOW && !waitButtonReleased)
@@ -145,7 +136,7 @@ void loop()
 
     updateLEDs();
     loopWebserver();
-    mqttClient.loop();
+    loopMqttClient();
 }
 
 void connectToWiFi()
@@ -260,14 +251,14 @@ void readDht()
     lastTemperature = heatIndex;
     lastHumidity = humidity;
 
-    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_TEMPERATURE).c_str(), String(lastTemperature), false, 0);
-    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_HUMIDITY).c_str(), String(lastHumidity), false, 0);
+    mqttPublishData(MQTT_SUBTOPIC_TEMPERATURE, String(lastTemperature));
+    mqttPublishData(MQTT_SUBTOPIC_HUMIDITY, String(lastTemperature));
 }
 
 void readSignalStrength()
 {
     lastSignalStrength = WiFi.RSSI();
-    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_SIGNAL).c_str(), String(lastSignalStrength), false, 0);
+    mqttPublishData(MQTT_SUBTOPIC_SIGNAL, String(lastSignalStrength));
 }
 
 void updateDisplay()
@@ -418,175 +409,6 @@ void writeReadingsToDB()
     }
 }
 
-void connectToMqttBroker()
-{
-    char macAddress[18];
-    strcpy(macAddress, WiFi.macAddress().c_str());
-    char mainTopic[23];
-    snprintf(mainTopic, sizeof(mainTopic), MQTT_TOPIC_MAIN, macAddress);
-    mqttMainTopic = mainTopic;
-
-    JsonDocument lwt;
-    lwt["status"] = F("disconnected");
-    lwt["mac_address"] = macAddress;
-    char lwt_buffer[MQTT_BUFFER_SIZE];
-    serializeJson(lwt, lwt_buffer);
-    mqttClient.setWill(MQTT_TOPIC_DEVICES, lwt_buffer, false, 2);
-
-    Serial.print(F("Connecting to MQTT broker..."));
-    while(!mqttClient.connect(MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD))
-    {
-        Serial.print(F("."));
-        delay(1000);
-    }
-    Serial.println(F("\nConnected"));
-    JsonDocument json;
-    json["status"] = F("connected");
-    json["mac_address"] = macAddress;
-    char buffer[MQTT_BUFFER_SIZE];
-    size_t length = serializeJson(json, buffer);
-    mqttClient.publish(MQTT_TOPIC_DEVICES, buffer, length, false, 2);
-    publishDeviceActive();
-
-    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_ROOM_UPDATE);
-    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_ACTIVE_UPDATE);
-    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MIN_TEMP_UPDATE);
-    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MAX_TEMP_UPDATE);
-    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_SIGNAL_UPDATE);
-}
-
-void onMqttMessageReceived(String& topic, String& payload)
-{
-    JsonDocument json;
-    deserializeJson(json, payload);
-    Serial.println("Received MQTT message: " + topic + " - " + payload);
-
-    if (topic.endsWith(MQTT_SUBTOPIC_ROOM_UPDATE))
-        mqttUpdateRoom(topic, payload);
-    else if (topic.endsWith(MQTT_SUBTOPIC_ACTIVE_UPDATE))
-        mqttUpdateActive(payload);
-    else if (topic.endsWith(MQTT_SUBTOPIC_THRESHOLDS_MIN_TEMP_UPDATE))
-        mqttUpdateTemperatureMinThreshold(topic, payload);
-    else if (topic.endsWith(MQTT_SUBTOPIC_THRESHOLDS_MAX_TEMP_UPDATE))
-        mqttUpdateTemperatureMaxThreshold(topic, payload);
-    else if (topic.endsWith(MQTT_SUBTOPIC_THRESHOLDS_SIGNAL_UPDATE))
-        mqttUpdateSignalStrengthThreshold(topic, payload);
-    else
-        Serial.println("Ignored");
-}
-
-void publishDeviceRoom()
-{
-    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_ROOM).c_str(), String(roomNumber), true, 2);
-}
-
-void mqttUpdateRoom(String topic, String room)
-{
-    int newRoomNumber = room.charAt(0) - 48;
-    if (newRoomNumber < 1 || newRoomNumber > MAX_ROOMS)
-    {
-        publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), "error", F("Room ID out of range"));
-        return;
-    }
-
-    roomNumber = newRoomNumber;
-
-    pointDevice.clearTags();
-    pointDevice.addTag("room_number", roomNumber);
-    publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), "ok");
-    publishDeviceRoom();
-}
-
-void publishRequestResult(const char* topic, String result)
-{
-    publishRequestResult(topic, result, "");
-}
-
-void publishRequestResult(const char* topic, String result, String error)
-{
-    JsonDocument json;
-    json["result"] = result;
-    if (result == F("error"))
-        json["error"] = error;
-    char buffer[MQTT_BUFFER_SIZE];
-    size_t length = serializeJson(json, buffer);
-    mqttClient.publish(topic, buffer, length, false, 0);
-}
-
-void mqttUpdateActive(String active)
-{
-    bool isActive = active.equals("true");
-    if (isActive)
-        state = NORMAL;
-    else
-        state = PAUSED;
-    publishDeviceActive();
-}
-
-void publishDeviceActive()
-{
-    String active;
-    if (state != PAUSED)
-        active = F("true");
-    else
-        active = F("false");
-    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_ACTIVE).c_str(), active, true, 2);
-}
-
-void mqttUpdateTemperatureMinThreshold(String topic, String threshold)
-{
-    float newLowTemperature = threshold.toFloat();
-    if (newLowTemperature >= highTemperatureThreshold)
-    {
-        publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("The low temperature threshold must be lower than the high temperature threshold"));
-        return;
-    }
-    if (newLowTemperature < TEMPERATURE_THRESHOLD_MIN || newLowTemperature > TEMPERATURE_THRESHOLD_MAX)
-    {
-        publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("Low temperature threshold out of range"));
-        return;
-    }
-
-    lowTemperatureThreshold = newLowTemperature;
-    publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("ok"), "");
-    publishThresholds();
-}
-
-void mqttUpdateTemperatureMaxThreshold(String topic, String threshold)
-{
-    float newHighTemperature = threshold.toFloat();
-    if (newHighTemperature < TEMPERATURE_THRESHOLD_MIN || newHighTemperature > TEMPERATURE_THRESHOLD_MAX)
-    {
-        publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("High temperature threshold out of range"));
-        return;
-    }
-
-    highTemperatureThreshold = newHighTemperature;
-    publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("ok"), "");
-    publishThresholds();
-}
-
-void mqttUpdateSignalStrengthThreshold(String topic, String threshold)
-{
-    int newSignalStrength = threshold.toInt();
-    if (newSignalStrength < SIGNAL_STRENGTH_THRESHOLD_MAX || newSignalStrength > SIGNAL_STRENGTH_THRESHOLD_MIN)
-    {
-        publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("Signal strength threshold out of range"));
-        return;
-    }
-
-    signalStrengthThreshold = newSignalStrength;
-    publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("ok"), "");
-    publishThresholds();
-}
-
-void publishThresholds()
-{
-    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MIN_TEMP).c_str(), String(lowTemperatureThreshold), true, 0);
-    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MAX_TEMP).c_str(), String(highTemperatureThreshold), true, 0);
-    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_SIGNAL).c_str(), String(signalStrengthThreshold), true, 0);
-}
-
 State getState()
 {
     return state;
@@ -652,4 +474,9 @@ void setRoomNumber(int newRoomNumber)
 void setPaused(bool paused)
 {
     state = paused ? PAUSED : NORMAL;
+}
+
+String getMacAddress()
+{
+    return WiFi.macAddress();
 }
