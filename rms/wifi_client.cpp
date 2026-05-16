@@ -40,3 +40,8 @@ String getMacAddress()
 {
     return WiFi.macAddress();
 }
+
+String getIpAddress()
+{
+    return WiFi.localIP().toString();
+}

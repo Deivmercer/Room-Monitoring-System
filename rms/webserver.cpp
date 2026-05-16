@@ -2,7 +2,9 @@
 #include <ESP8266WebServer.h>
 #include "webserver.h"
 #include "rms.h"
+#include "wifi_client.h"
 #include "mqtt_client.h"
+#include "secrets.h"
 
 ESP8266WebServer server(80);
 
@@ -14,6 +16,7 @@ void setupWebserver()
     server.on("/pause", handlePause);
     server.on("/resume", handleResume);
     server.on("/change_room", handleChangeRoom);
+    server.on("/wot", handleWot);
     server.onNotFound(handleNotFound);
     server.begin();
 }
@@ -218,6 +221,238 @@ void handleResume()
     server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
     server.send(301);
     publishDeviceActive();
+}
+
+void handleWot()
+{
+    String macAddress = getMacAddress();
+    String mqttBroker = String(MQTT_BROKER_IP);
+    String ipAddress = getIpAddress();
+
+    String json = F(
+        "{\n"
+            "\"@context\": \"https://www.w3.org/2019/wot/td/v1.1\",\n"
+            "\"title\": \"Room Monitoring System\",\n");
+    json += F("\"id\": \"") + macAddress + F("\",\n");
+    json += F("\"properties\": {\n"
+                "\"temperature\": {\n"
+                    "\"description\": \"Latest temperature value\",\n"
+                    "\"type\": \"float\",\n"
+                    "\"readOnly\": true,\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/sensors/temperature\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"humidity\": {\n"
+                    "\"description\": \"Latest humidity value\",\n"
+                    "\"type\": \"float\",\n"
+                    "\"readOnly\": true,\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/sensors/humidity\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"signalStrength\": {\n"
+                    "\"description\": \"Latest WiFi signal strength value\",\n"
+                    "\"type\": \"int\",\n"
+                    "\"readOnly\": true,\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/sensors/signal_strength\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"room\": {\n"
+                    "\"description\": \"The room where this device is located (1 - 9)\",\n"
+                    "\"type\": \"int\",\n"
+                    "\"readOnly\": false,\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/room\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"minTemperatureThreshold\": {\n"
+                    "\"description\": \"The lowest acceptable temperature value (-15 - 50)\",\n"
+                    "\"type\": \"float\",\n"
+                    "\"readOnly\": false,\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/thresholds/min_temperature\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"maxTemperatureThreshold\": {\n"
+                    "\"description\": \"The highest acceptable temperature value (-15 - 50)\",\n"
+                    "\"type\": \"float\",\n"
+                    "\"readOnly\": false,\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/thresholds/max_temperature\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"signalStrengthThreshold\": {\n"
+                    "\"description\": \"The lower acceptable signal strength value (-100 - 0)\",\n"
+                    "\"type\": \"int\",\n"
+                    "\"readOnly\": false,\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/thresholds/signal_strength\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"isActive\": {\n"
+                    "\"description\": \"The current status of the device (true/false)\",\n"
+                    "\"type\": \"bool\",\n"
+                    "\"readOnly\": false,\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/active\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"webOfThings\": {\n"
+                    "\"description\": \"Returns the Web of Things definition of this device (i.e. this resource)\",\n"
+                    "\"type\": \"object\",\n"
+                    "\"readOnly\": true,\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"http://") + ipAddress + F("/wot\",\n");
+    json += F(              "\"contentType\": \"application/json\"\n"
+                        "}\n"
+                    "]\n"
+                "}\n"                
+            "},\n"
+            "\"actions\": {\n"
+                "\"updateStatus\": {\n"
+                    "\"input\": {\n"
+                        "\"type\": \"bool\",\n"
+                        "\"description\": \"The new status of the device\"\n"
+                    "},\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/active/update\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"updateMinTemperature\": {\n"
+                    "\"input\": {\n"
+                        "\"type\": \"float\",\n"
+                        "\"description\": \"The new lower temperature threshold. Must be lower than maxTemperatureThreshold\"\n"
+                    "},\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/thresholds/min_temperature/update\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"updateMaxTemperature\": {\n"
+                    "\"input\": {\n"
+                        "\"type\": \"float\",\n"
+                        "\"description\": \"The new higher temperature threshold. Must be higher than minTemperatureThreshold\"\n"
+                    "},\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/thresholds/max_temperature/update\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"updateSignalStrength\": {\n"
+                    "\"input\": {\n"
+                        "\"type\": \"int\",\n"
+                        "\"description\": \"The new signal strength threshold\"\n"
+                    "},\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/thresholds/signal_strength/update\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"updateRoom\": {\n"
+                    "\"input\": {\n"
+                        "\"type\": \"int\",\n"
+                        "\"description\": \"The new room\"\n"
+                    "},\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/room/update\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"pause\": {\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"http://") + ipAddress + F("/pause\",\n");
+    json += F(              "\"htv:methodName\": \"GET\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"resume\": {\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"http://") + ipAddress + F("/resume\",\n");
+    json += F(              "\"htv:methodName\": \"GET\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"setThresholds\": {\n"
+                    "\"input\": {\n"
+                        "\"low_temperature\": {\n"
+                            "\"type\": \"float\"\n"
+                        "},\n"
+                        "\"high_temperature\": {\n"
+                            "\"type\": \"float\"\n"
+                        "},\n"
+                        "\"signal_strength\": {\n"
+                            "\"type\": \"int\"\n"
+                        "}\n"
+                    "},\n"
+                    "\"required\": [\"low_temperature\", \"high_temperature\", \"signal_strength\"],\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"http://") + ipAddress + F("/set_thresholds\",\n");
+    json += F(              "\"contentType\": \"application/x-www-form-urlencoded\",\n"
+                            "\"htv:methodName\": \"POST\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"changeRoom\": {\n"
+                    "\"input\": {\n"
+                        "\"room_number\": {\n"
+                            "\"type\": \"int\"\n"
+                        "}\n"
+                    "},\n"
+                    "\"required\": [\"room_number\"],\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"http://") + ipAddress + F("/change_room\",\n");
+    json += F(              "\"contentType\": \"application/x-www-form-urlencoded\",\n"
+                            "\"htv:methodName\": \"POST\"\n"
+                        "}\n"
+                    "]\n"
+                "}\n"
+            "}"
+        "}\n"
+    );
+
+    server.send(200, F("application/json"), json);
 }
 
 String getErrorPage(String errorMessage)

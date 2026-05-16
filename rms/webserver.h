@@ -9,6 +9,7 @@ void handleSetThresholds();
 void handleChangeRoom();
 void handlePause();
 void handleResume();
+void handleWot();
 String getErrorPage(String errorMessage);
 
 #endif // WEBSERVER_H
