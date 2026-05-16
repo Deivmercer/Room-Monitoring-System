@@ -33,8 +33,6 @@ void setup()
 {
     dht.begin();
 
-    setupWifi();
-
     // Initializing the LCD display
     Wire.begin();
     Wire.beginTransmission(DISPLAY_ADDR);
@@ -48,6 +46,8 @@ void setup()
         Serial.print(F("LCD not found. Error "));
         Serial.println(error);
     }
+
+    setupWifi();
 
     // Initializing ticker
     updateDataTicker.attach(5.0, toggleReadingFlag);

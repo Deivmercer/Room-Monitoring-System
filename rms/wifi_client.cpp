@@ -7,6 +7,8 @@ WiFiServer wifiServer(80);
 
 void setupWifi()
 {
+    printToLCD("Setup in", "progress...");
+
     WiFiManager wifiManager;
 
     // Erase WiFi settings
