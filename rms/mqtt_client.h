@@ -7,7 +7,7 @@
 #define MQTT_SUBTOPIC_ACK "/ack"
 #define MQTT_SUBTOPIC_TEMPERATURE "/sensors/temperature"
 #define MQTT_SUBTOPIC_HUMIDITY "/sensors/humidity"
-#define MQTT_SUBTOPIC_SIGNAL "/sensors/signal"
+#define MQTT_SUBTOPIC_SIGNAL "/sensors/signal_strength"
 #define MQTT_SUBTOPIC_ROOM "/room"
 #define MQTT_SUBTOPIC_ROOM_UPDATE "/room/update"
 #define MQTT_SUBTOPIC_ACTIVE "/active"

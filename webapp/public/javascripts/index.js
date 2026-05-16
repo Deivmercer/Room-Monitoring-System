@@ -111,7 +111,7 @@ function onDataReceived(data, type, deviceId) {
             if (room === currentRoom)
                 lastHumidity.innerText = data;
             break;
-        case "signal":
+        case "signal_strength":
             lastSignalStrengthValues[room] = newValue;
             if (room === currentRoom) {
                 lastSignalStrength.innerText = data;
