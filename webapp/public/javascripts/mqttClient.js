@@ -85,22 +85,26 @@ function subscribeTopic(topic) {
 function publishRoomNumber() {
 
     // TODO: read the ack
+    let deviceId = devices[currentRoom];
     client.publish(`rms/${deviceId}/room/update`, newRoomNumber.value);
 }
 
 function resumeDevice() {
 
+    let deviceId = devices[currentRoom];
     client.publish(`rms/${deviceId}/active/update`, "true");
 }
 
 function pauseDevice() {
 
+    let deviceId = devices[currentRoom];
     client.publish(`rms/${deviceId}/active/update`, "false");
 }
 
 function publishThresholds() {
 
     // TODO: read the ack
+    let deviceId = devices[currentRoom];
     client.publish(`rms/${deviceId}/thresholds/min_temperature/update`, lowTemperature.value);
     client.publish(`rms/${deviceId}/thresholds/max_temperature/update`, highTemperature.value);
     client.publish(`rms/${deviceId}/thresholds/signal_strength/update`, signalStrength.value);

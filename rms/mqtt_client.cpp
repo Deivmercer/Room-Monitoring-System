@@ -127,7 +127,7 @@ void mqttPublishRequestResult(const char* topic, String result, String error)
 void mqttUpdateActive(String active)
 {
     bool isActive = active.equals("true");
-    setPaused(isActive);
+    setPaused(!isActive);
     mqttPublishDeviceActive();
 }
 
