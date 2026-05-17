@@ -77,3 +77,13 @@ p {
         color: #1558b0;
     }
 }
+
+.room-alarm {
+    color: #e81a1a;
+    text-decoration: underline;
+    cursor: pointer;
+
+    &:hover {
+        color: #b01515;
+    }
+}
