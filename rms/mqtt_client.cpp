@@ -48,6 +48,13 @@ void connectToMqttBroker()
         delay(1000);
     }
     Serial.println(F("\nConnected"));
+
+    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_ROOM_UPDATE);
+    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_ACTIVE_UPDATE);
+    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MIN_TEMP_UPDATE);
+    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MAX_TEMP_UPDATE);
+    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_SIGNAL_UPDATE);
+
     JsonDocument json;
     json["status"] = F("connected");
     json["mac_address"] = macAddress;
@@ -55,12 +62,6 @@ void connectToMqttBroker()
     size_t length = serializeJson(json, buffer);
     mqttClient.publish(MQTT_TOPIC_DEVICES, buffer, length, false, 2);
     mqttPublishDeviceActive();
-
-    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_ROOM_UPDATE);
-    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_ACTIVE_UPDATE);
-    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MIN_TEMP_UPDATE);
-    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MAX_TEMP_UPDATE);
-    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_SIGNAL_UPDATE);
 }
 
 void onMqttMessageReceived(String& topic, String& payload)
