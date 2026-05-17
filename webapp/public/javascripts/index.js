@@ -230,7 +230,7 @@ function onDeviceDisconnected(deviceId) {
 function onAlarmReceived(deviceId) {
 
     let room = devices.indexOf(deviceId);
-    if (room === currentRoom)
+    if (room === currentRoom || room === -1)
         return;
 
     let roomButton = roomButtons[room];
