@@ -54,7 +54,7 @@ void connectToMqttBroker()
     char buffer[MQTT_BUFFER_SIZE];
     size_t length = serializeJson(json, buffer);
     mqttClient.publish(MQTT_TOPIC_DEVICES, buffer, length, false, 2);
-    publishDeviceActive();
+    mqttPublishDeviceActive();
 
     mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_ROOM_UPDATE);
     mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_ACTIVE_UPDATE);
@@ -88,7 +88,7 @@ void mqttPublishData(const char* subTopic, String data)
     mqttClient.publish((mqttMainTopic + subTopic).c_str(), data, false, 0);
 }
 
-void publishDeviceRoom()
+void mqttPublishDeviceRoom()
 {
     String roomNumber = getRoomNumber();
     mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_ROOM).c_str(), roomNumber, true, 2);
@@ -105,15 +105,15 @@ void mqttUpdateRoom(String topic, String room)
 
     setRoomNumber(newRoomNumber);
     publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), "ok");
-    publishDeviceRoom();
+    mqttPublishDeviceRoom();
 }
 
-void publishRequestResult(const char* topic, String result)
+void mqttPublishRequestResult(const char* topic, String result)
 {
-    publishRequestResult(topic, result, "");
+    mqttPublishRequestResult(topic, result, "");
 }
 
-void publishRequestResult(const char* topic, String result, String error)
+void mqttPublishRequestResult(const char* topic, String result, String error)
 {
     JsonDocument json;
     json["result"] = result;
@@ -128,10 +128,10 @@ void mqttUpdateActive(String active)
 {
     bool isActive = active.equals("true");
     setPaused(isActive);
-    publishDeviceActive();
+    mqttPublishDeviceActive();
 }
 
-void publishDeviceActive()
+void mqttPublishDeviceActive()
 {
     State state = getState();
 
@@ -149,18 +149,18 @@ void mqttUpdateTemperatureMinThreshold(String topic, String threshold)
     float highTemperatureThreshold = getHighTemperatureThreshold();
     if (newLowTemperature >= highTemperatureThreshold)
     {
-        publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("The low temperature threshold must be lower than the high temperature threshold"));
+        mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("The low temperature threshold must be lower than the high temperature threshold"));
         return;
     }
     if (newLowTemperature < TEMPERATURE_THRESHOLD_MIN || newLowTemperature > TEMPERATURE_THRESHOLD_MAX)
     {
-        publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("Low temperature threshold out of range"));
+        mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("Low temperature threshold out of range"));
         return;
     }
 
     setLowTemperatureThreshold(newLowTemperature);
-    publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("ok"), "");
-    publishThresholds();
+    mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("ok"), "");
+    mqttPublishThresholds();
 }
 
 void mqttUpdateTemperatureMaxThreshold(String topic, String threshold)
@@ -168,13 +168,13 @@ void mqttUpdateTemperatureMaxThreshold(String topic, String threshold)
     float newHighTemperature = threshold.toFloat();
     if (newHighTemperature < TEMPERATURE_THRESHOLD_MIN || newHighTemperature > TEMPERATURE_THRESHOLD_MAX)
     {
-        publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("High temperature threshold out of range"));
+        mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("High temperature threshold out of range"));
         return;
     }
 
     setHighTemperatureThreshold(newHighTemperature);
-    publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("ok"), "");
-    publishThresholds();
+    mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("ok"), "");
+    mqttPublishThresholds();
 }
 
 void mqttUpdateSignalStrengthThreshold(String topic, String threshold)
@@ -182,16 +182,16 @@ void mqttUpdateSignalStrengthThreshold(String topic, String threshold)
     int newSignalStrength = threshold.toInt();
     if (newSignalStrength < SIGNAL_STRENGTH_THRESHOLD_MAX || newSignalStrength > SIGNAL_STRENGTH_THRESHOLD_MIN)
     {
-        publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("Signal strength threshold out of range"));
+        mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("Signal strength threshold out of range"));
         return;
     }
 
     setSignalStrengthThreshold(newSignalStrength);
-    publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("ok"), "");
-    publishThresholds();
+    mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("ok"), "");
+    mqttPublishThresholds();
 }
 
-void publishThresholds()
+void mqttPublishThresholds()
 {
     String lowTemperatureThreshold = String(getLowTemperatureThreshold());
     mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MIN_TEMP).c_str(), lowTemperatureThreshold, true, 0);

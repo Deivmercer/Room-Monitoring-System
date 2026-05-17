@@ -152,14 +152,14 @@ void updateState()
         case CONFIG_SIGNAL_STRENGTH:
             state = CONFIG_ROOM_NUMBER;
             lcd.clear();
-            publishThresholds();
+            mqttPublishThresholds();
             break;
         case CONFIG_ROOM_NUMBER:
             state = NORMAL;
             pointDevice.clearTags();
             pointDevice.addTag("room_number", roomNumber);
             lcd.clear();
-            publishDeviceRoom();
+            mqttPublishDeviceRoom();
             break;
         default:
             Serial.println(F("ERROR: Unknown state"));

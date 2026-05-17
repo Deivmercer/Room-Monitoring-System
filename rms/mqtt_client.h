@@ -24,15 +24,15 @@ void loopMqttClient();
 void connectToMqttBroker();
 void onMqttMessageReceived(String& topic, String& payload);
 void mqttPublishData(const char* subTopic, String data);
-void publishDeviceRoom();
+void mqttPublishDeviceRoom();
 void mqttUpdateRoom(String topic, String room);
-void publishRequestResult(const char* topic, String result);
-void publishRequestResult(const char* topic, String result, String error);
+void mqttPublishRequestResult(const char* topic, String result);
+void mqttPublishRequestResult(const char* topic, String result, String error);
 void mqttUpdateActive(String status);
-void publishDeviceActive();
+void mqttPublishDeviceActive();
 void mqttUpdateTemperatureMinThreshold(String topic, String threshold);
 void mqttUpdateTemperatureMaxThreshold(String topic, String threshold);
 void mqttUpdateSignalStrengthThreshold(String topic, String threshold);
-void publishThresholds();
+void mqttPublishThresholds();
 
 #endif //ASSIGNMENT_1_MQTT_CLIENT_H

@@ -177,7 +177,7 @@ void handleSetThresholds()
 
     server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
     server.send(301);
-    publishThresholds();
+    mqttPublishThresholds();
 }
 
 void handleChangeRoom()
@@ -204,7 +204,7 @@ void handleChangeRoom()
 
     server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
     server.send(301);
-    publishDeviceRoom();
+    mqttPublishDeviceRoom();
 }
 
 void handlePause()
@@ -212,7 +212,7 @@ void handlePause()
     setPaused(true);
     server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
     server.send(301);
-    publishDeviceActive();
+    mqttPublishDeviceActive();
 }
 
 void handleResume()
@@ -220,7 +220,7 @@ void handleResume()
     setPaused(false);
     server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
     server.send(301);
-    publishDeviceActive();
+    mqttPublishDeviceActive();
 }
 
 void handleWot()
