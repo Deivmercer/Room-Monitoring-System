@@ -1,5 +1,5 @@
-#ifndef ASSIGNMENT_WIFI_CLIENT_H
-#define ASSIGNMENT_WIFI_CLIENT_H
+#ifndef RMS_WIFI_CLIENT_H
+#define RMS_WIFI_CLIENT_H
 
 void setupWifi();
 void connectToWiFi();
@@ -9,4 +9,4 @@ String getMacAddress();
 String getIpAddress();
 bool isFirstSetup();
 
-#endif //ASSIGNMENT_WIFI_CLIENT_H
+#endif // RMS_WIFI_CLIENT_H

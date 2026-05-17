@@ -1,5 +1,5 @@
-#ifndef ASSIGNMENT_1_MQTT_CLIENT_H
-#define ASSIGNMENT_1_MQTT_CLIENT_H
+#ifndef RMS_MQTT_CLIENT_H
+#define RMS_MQTT_CLIENT_H
 
 #define MQTT_BUFFER_SIZE 256
 #define MQTT_TOPIC_MAIN "rms/%s"
@@ -39,4 +39,4 @@ void mqttPublishThresholds();
 void mqttPublishAlarm(const char* topic, String message);
 void mqttFirstSetup();
 
-#endif //ASSIGNMENT_1_MQTT_CLIENT_H
+#endif // RMS_MQTT_CLIENT_H

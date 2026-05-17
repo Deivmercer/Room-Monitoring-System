@@ -1,5 +1,5 @@
-#ifndef WEBSERVER_H
-#define WEBSERVER_H
+#ifndef RMS_WEBSERVER_H
+#define RMS_WEBSERVER_H
 
 void setupWebserver();
 void loopWebserver();
@@ -12,4 +12,4 @@ void handleResume();
 void handleWot();
 String getErrorPage(String errorMessage);
 
-#endif // WEBSERVER_H
+#endif // RMS_WEBSERVER_H
