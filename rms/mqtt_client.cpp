@@ -211,13 +211,13 @@ void mqttUpdateSignalStrengthThreshold(String topic, String threshold)
 void mqttPublishThresholds()
 {
     String lowTemperatureThreshold = String(getLowTemperatureThreshold());
-    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MIN_TEMP).c_str(), lowTemperatureThreshold, true, 0);
+    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MIN_TEMP).c_str(), lowTemperatureThreshold, true, 2);
 
     String highTemperatureThreshold = String(getHighTemperatureThreshold());
-    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MAX_TEMP).c_str(), highTemperatureThreshold, true, 0);
+    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MAX_TEMP).c_str(), highTemperatureThreshold, true, 2);
 
     String signalStrengthThreshold = String(getSignalStrengthThreshold());
-    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_SIGNAL).c_str(), signalStrengthThreshold, true, 0);
+    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_SIGNAL).c_str(), signalStrengthThreshold, true, 2);
 }
 
 void mqttPublishAlarm(const char* topic, String message)
@@ -229,6 +229,6 @@ void mqttFirstSetup()
 {
     mqttPublishThresholds();
     mqttPublishDeviceRoom();
-    mqttPublishDeviceActive(); // TODO: ho il dubbio che, durante la prima connessione, lo stato pausa/attivo non venga impostato nella dashboard (almeno finché non cambio stanza)
+    mqttPublishDeviceActive();
     doFirstSetup = false;
 }
