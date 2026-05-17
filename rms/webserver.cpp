@@ -241,7 +241,7 @@ void handleWot()
                     "\"readOnly\": true,\n"
                     "\"forms\": [\n"
                         "{\n");
-    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/sensors/temperature\",\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_TEMPERATURE + F("\",\n");
     json += F(              "\"contentType\": \"text/plain\"\n"
                         "}\n"
                     "]\n"
@@ -252,7 +252,7 @@ void handleWot()
                     "\"readOnly\": true,\n"
                     "\"forms\": [\n"
                         "{\n");
-    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/sensors/humidity\",\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_HUMIDITY + F("\",\n");
     json += F(              "\"contentType\": \"text/plain\"\n"
                         "}\n"
                     "]\n"
@@ -263,7 +263,7 @@ void handleWot()
                     "\"readOnly\": true,\n"
                     "\"forms\": [\n"
                         "{\n");
-    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/sensors/signal_strength\",\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_SIGNAL + F("\",\n");
     json += F(              "\"contentType\": \"text/plain\"\n"
                         "}\n"
                     "]\n"
@@ -274,7 +274,7 @@ void handleWot()
                     "\"readOnly\": false,\n"
                     "\"forms\": [\n"
                         "{\n");
-    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/room\",\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_ROOM + F("\",\n");
     json += F(              "\"contentType\": \"text/plain\"\n"
                         "}\n"
                     "]\n"
@@ -285,7 +285,7 @@ void handleWot()
                     "\"readOnly\": false,\n"
                     "\"forms\": [\n"
                         "{\n");
-    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/thresholds/min_temperature\",\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_THRESHOLDS_MIN_TEMP + F("\",\n");
     json += F(              "\"contentType\": \"text/plain\"\n"
                         "}\n"
                     "]\n"
@@ -296,7 +296,7 @@ void handleWot()
                     "\"readOnly\": false,\n"
                     "\"forms\": [\n"
                         "{\n");
-    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/thresholds/max_temperature\",\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_THRESHOLDS_MAX_TEMP + F("\",\n");
     json += F(              "\"contentType\": \"text/plain\"\n"
                         "}\n"
                     "]\n"
@@ -307,7 +307,7 @@ void handleWot()
                     "\"readOnly\": false,\n"
                     "\"forms\": [\n"
                         "{\n");
-    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/thresholds/signal_strength\",\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_THRESHOLDS_SIGNAL + F("\",\n");
     json += F(              "\"contentType\": \"text/plain\"\n"
                         "}\n"
                     "]\n"
@@ -318,7 +318,73 @@ void handleWot()
                     "\"readOnly\": false,\n"
                     "\"forms\": [\n"
                         "{\n");
-    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/active\",\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_ACTIVE + F("\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"temperatureAlarms\": {\n"
+                    "\"description\": \"The temperature-related alarms\",\n"
+                    "\"type\": \"string\",\n"
+                    "\"readOnly\": true,\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_ALARMS_TEMPERATURE + F("\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"signalStrengthAlarms\": {\n"
+                    "\"description\": \"The signal strength-related alarms\",\n"
+                    "\"type\": \"string\",\n"
+                    "\"readOnly\": true,\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_ALARMS_SIGNAL + F("\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"minTemperatureUpdateAck\": {\n"
+                    "\"description\": \"Acks related to min temperature threshold update requests\",\n"
+                    "\"type\": \"object\",\n"
+                    "\"readOnly\": true,\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_THRESHOLDS_MIN_TEMP_UPDATE + MQTT_SUBTOPIC_ACK + F("\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"maxTemperatureUpdateAck\": {\n"
+                    "\"description\": \"Acks related to max temperature threshold update requests\",\n"
+                    "\"type\": \"object\",\n"
+                    "\"readOnly\": true,\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_THRESHOLDS_MAX_TEMP_UPDATE + MQTT_SUBTOPIC_ACK + F("\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"signalStrengthUpdateAck\": {\n"
+                    "\"description\": \"Acks related to signal strength threshold update requests\",\n"
+                    "\"type\": \"object\",\n"
+                    "\"readOnly\": true,\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_THRESHOLDS_SIGNAL_UPDATE + MQTT_SUBTOPIC_ACK + F("\",\n");
+    json += F(              "\"contentType\": \"text/plain\"\n"
+                        "}\n"
+                    "]\n"
+                "},\n"
+                "\"roomUpdateAck\": {\n"
+                    "\"description\": \"Acks related to room update requests\",\n"
+                    "\"type\": \"object\",\n"
+                    "\"readOnly\": true,\n"
+                    "\"forms\": [\n"
+                        "{\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_ROOM_UPDATE + MQTT_SUBTOPIC_ACK + F("\",\n");
     json += F(              "\"contentType\": \"text/plain\"\n"
                         "}\n"
                     "]\n"
@@ -343,7 +409,7 @@ void handleWot()
                     "},\n"
                     "\"forms\": [\n"
                         "{\n");
-    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/active/update\",\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_ACTIVE_UPDATE + F("\",\n");
     json += F(              "\"contentType\": \"text/plain\"\n"
                         "}\n"
                     "]\n"
@@ -355,7 +421,7 @@ void handleWot()
                     "},\n"
                     "\"forms\": [\n"
                         "{\n");
-    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/thresholds/min_temperature/update\",\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_THRESHOLDS_MIN_TEMP_UPDATE + F("\",\n");
     json += F(              "\"contentType\": \"text/plain\"\n"
                         "}\n"
                     "]\n"
@@ -367,7 +433,7 @@ void handleWot()
                     "},\n"
                     "\"forms\": [\n"
                         "{\n");
-    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/thresholds/max_temperature/update\",\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_THRESHOLDS_MAX_TEMP_UPDATE + F("\",\n");
     json += F(              "\"contentType\": \"text/plain\"\n"
                         "}\n"
                     "]\n"
@@ -379,7 +445,7 @@ void handleWot()
                     "},\n"
                     "\"forms\": [\n"
                         "{\n");
-    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/thresholds/signal_strength/update\",\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_THRESHOLDS_SIGNAL_UPDATE + F("\",\n");
     json += F(              "\"contentType\": \"text/plain\"\n"
                         "}\n"
                     "]\n"
@@ -391,7 +457,7 @@ void handleWot()
                     "},\n"
                     "\"forms\": [\n"
                         "{\n");
-    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + F("/room/update\",\n");
+    json +=             F(  "\"href\": \"mqtt://") + mqttBroker + F("/rms/") + macAddress + MQTT_SUBTOPIC_ROOM_UPDATE + F("\",\n");
     json += F(              "\"contentType\": \"text/plain\"\n"
                         "}\n"
                     "]\n"
