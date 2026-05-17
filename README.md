@@ -8,7 +8,7 @@ This project implements an IoT monitoring system designed to collect environment
 - [DHT sensor library](https://github.com/adafruit/DHT-sensor-library) 1.4.7
 - [ESP8266 Influxdb](https://github.com/tobiasschuerg/InfluxDB-Client-for-Arduino) 3.13.2
 - [LiquidCrystal I2C](https://github.com/johnrickman/LiquidCrystal_I2C) 1.1.2
-- [MQTT](https://github.com/256dpi/arduino-mqtt) 2.5.3
+- [MQTT](https://github.com/256dpi/arduino-mqtt) 2.5.2 (2.5.3 may cause repeated connection/disconnection)
 - [WiFiManager](https://github.com/tzapu/WiFiManager) 2.0.17
 
 ## Hardware materials
