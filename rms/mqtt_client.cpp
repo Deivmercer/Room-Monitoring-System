@@ -104,7 +104,7 @@ void mqttPublishDeviceRoom()
 
 void mqttUpdateRoom(String topic, String room)
 {
-    int newRoomNumber = room.charAt(0) - 48;
+    int newRoomNumber = room.toInt();
     if (newRoomNumber < 1 || newRoomNumber > MAX_ROOMS)
     {
         mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), "error", F("Room ID out of range"));
@@ -218,8 +218,9 @@ void mqttPublishAlarm(const char* topic, String message)
 
 void mqttFirstSetup()
 {
+    // TODO: controllare che non reimposti anche un device già settato
     mqttPublishThresholds();
     mqttPublishDeviceRoom();
-    mqttPublishDeviceActive();
+    mqttPublishDeviceActive(); // TODO: ho il dubbio che, durante la prima connessione, lo stato pausa/attivo non venga impostato nella dashboard (almeno finché non cambio stanza)
     doFirstSetup = false;
 }

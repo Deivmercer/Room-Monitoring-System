@@ -5,6 +5,8 @@ const MQTT_SUBTOPIC_SENSORS = "/sensors/#"
 const MQTT_SUBTOPIC_ROOM = "/room"
 const MQTT_SUBTOPIC_ACTIVE = "/active"
 const MQTT_SUBTOPIC_THRESHOLDS = "/thresholds/+"
+const MQTT_SUBTOPIC_THRESHOLDS_ACKS = "/thresholds/+/update/ack"
+const MQTT_SUBTOPIC_ROOM_ACKS = "/room/update/ack"
 let client;
 
 function mqttConnect(clientId, username, password, callback) {
@@ -48,6 +50,10 @@ function mqttConnect(clientId, username, password, callback) {
         if (topic.includes("/sensors/")) {
             let type = topic.split("/sensors/")[1];
             onDataReceived(message, type, deviceId);
+        } else if (topic.endsWith("/ack")) {
+            let json = JSON.parse(message);
+            if (json.result === "error")
+                alert("Error: " + json.error);
         } else if (topic.includes("/thresholds/")) {
             let type = topic.split("/thresholds/")[1];
             onThresholdReceived(message, type, deviceId);
@@ -70,6 +76,8 @@ function mqttSubscribeDevice(device) {
     subscribeTopic(mainTopic + MQTT_SUBTOPIC_ROOM);
     subscribeTopic(mainTopic + MQTT_SUBTOPIC_ACTIVE);
     subscribeTopic(mainTopic + MQTT_SUBTOPIC_THRESHOLDS);
+    subscribeTopic(mainTopic + MQTT_SUBTOPIC_THRESHOLDS_ACKS);
+    subscribeTopic(mainTopic + MQTT_SUBTOPIC_ROOM_ACKS);
 }
 
 function subscribeTopic(topic) {
@@ -84,7 +92,6 @@ function subscribeTopic(topic) {
 
 function publishRoomNumber() {
 
-    // TODO: read the ack
     let deviceId = devices[currentRoom];
     client.publish(`rms/${deviceId}/room/update`, newRoomNumber.value);
 }
@@ -103,9 +110,8 @@ function pauseDevice() {
 
 function publishThresholds() {
 
-    // TODO: read the ack
     let deviceId = devices[currentRoom];
-    client.publish(`rms/${deviceId}/thresholds/min_temperature/update`, lowTemperature.value);
     client.publish(`rms/${deviceId}/thresholds/max_temperature/update`, highTemperature.value);
+    client.publish(`rms/${deviceId}/thresholds/min_temperature/update`, lowTemperature.value);
     client.publish(`rms/${deviceId}/thresholds/signal_strength/update`, signalStrength.value);
 }
