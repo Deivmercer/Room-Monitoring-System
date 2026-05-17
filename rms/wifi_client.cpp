@@ -16,7 +16,7 @@ void setupWifi()
     firstSetup = !wifiManager.getWiFiIsSaved();
 
     // Erase WiFi settings
-    wifiManager.resetSettings();
+    // wifiManager.resetSettings();
 
     wifiManager.autoConnect();
 
