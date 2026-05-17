@@ -21,7 +21,7 @@
 #define MQTT_SUBTOPIC_ALARMS_TEMPERATURE "/alarms/temperature"
 #define MQTT_SUBTOPIC_ALARMS_SIGNAL "/alarms/signal_strength"
 
-void setupMqtt();
+void setupMqtt(bool firstSetup);
 void loopMqttClient();
 void connectToMqttBroker();
 void onMqttMessageReceived(String& topic, String& payload);
@@ -37,5 +37,6 @@ void mqttUpdateTemperatureMaxThreshold(String topic, String threshold);
 void mqttUpdateSignalStrengthThreshold(String topic, String threshold);
 void mqttPublishThresholds();
 void mqttPublishAlarm(const char* topic, String message);
+void mqttFirstSetup();
 
 #endif //ASSIGNMENT_1_MQTT_CLIENT_H

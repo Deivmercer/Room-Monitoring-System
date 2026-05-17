@@ -5,14 +5,18 @@
 
 WiFiServer wifiServer(80);
 
+bool firstSetup;
+
 void setupWifi()
 {
     printToLCD("Setup in", "progress...");
 
     WiFiManager wifiManager;
 
+    firstSetup = !wifiManager.getWiFiIsSaved();
+
     // Erase WiFi settings
-    // wifiManager.resetSettings();
+    wifiManager.resetSettings();
 
     wifiManager.autoConnect();
 
@@ -44,4 +48,9 @@ String getMacAddress()
 String getIpAddress()
 {
     return WiFi.localIP().toString();
+}
+
+bool isFirstSetup()
+{
+    return isFirstSetup;
 }

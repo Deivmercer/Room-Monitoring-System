@@ -7,5 +7,6 @@ bool isWifiConnected();
 int getSignalStrength();
 String getMacAddress();
 String getIpAddress();
+bool isFirstSetup();
 
 #endif //ASSIGNMENT_WIFI_CLIENT_H

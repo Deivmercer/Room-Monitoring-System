@@ -69,7 +69,7 @@ void setup()
     pointDevice.addTag("room_number", roomNumber);
 
     setupWebserver();
-    setupMqtt();
+    setupMqtt(isFirstSetup());
 
     Serial.begin(115200);
 }

@@ -12,11 +12,15 @@ MQTTClient mqttClient(MQTT_BUFFER_SIZE);
 
 String mqttMainTopic;
 
-void setupMqtt()
+bool doFirstSetup;
+
+void setupMqtt(bool firstSetup)
 {
     // Setup MQTT
     mqttClient.begin(MQTT_BROKER_IP, 1883, networkClient);
     mqttClient.onMessage(onMqttMessageReceived);
+
+    doFirstSetup = firstSetup;
 }
 
 void loopMqttClient()
@@ -62,6 +66,9 @@ void connectToMqttBroker()
     size_t length = serializeJson(json, buffer);
     mqttClient.publish(MQTT_TOPIC_DEVICES, buffer, length, false, 2);
     mqttPublishDeviceActive();
+
+    if (doFirstSetup)
+        mqttFirstSetup();
 }
 
 void onMqttMessageReceived(String& topic, String& payload)
@@ -207,4 +214,12 @@ void mqttPublishThresholds()
 void mqttPublishAlarm(const char* topic, String message)
 {
     mqttClient.publish((mqttMainTopic + topic).c_str(), message, false, 0);
+}
+
+void mqttFirstSetup()
+{
+    mqttPublishThresholds();
+    mqttPublishDeviceRoom();
+    mqttPublishDeviceActive();
+    doFirstSetup = false;
 }
