@@ -27,7 +27,16 @@ void loopMqttClient()
 {
     if (!mqttClient.connected())
         connectToMqttBroker();
+
+    int err = mqttClient.lastError();
+    if (err < 0)
+    {
+        Serial.print("mqtt error: ");
+        Serial.println(err);
+    }
+
     mqttClient.loop();
+    delay(10); // According to the docs, an additional delay(10) after client.loop() fixes many stability issues with WiFi connections
 }
 
 void connectToMqttBroker()
@@ -218,7 +227,6 @@ void mqttPublishAlarm(const char* topic, String message)
 
 void mqttFirstSetup()
 {
-    // TODO: controllare che non reimposti anche un device già settato
     mqttPublishThresholds();
     mqttPublishDeviceRoom();
     mqttPublishDeviceActive(); // TODO: ho il dubbio che, durante la prima connessione, lo stato pausa/attivo non venga impostato nella dashboard (almeno finché non cambio stanza)
