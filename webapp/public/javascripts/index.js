@@ -115,7 +115,7 @@ function onDataReceived(data, type, deviceId) {
             lastSignalStrengthValues[room] = newValue;
             if (room === currentRoom) {
                 lastSignalStrength.innerText = data;
-                if (newValue > signalStrengthThreshold[room])
+                if (newValue < signalStrengthThreshold[room])
                     signalStrengthWarning.style.display = "block";
                 else
                     signalStrengthWarning.style.display = "none";
