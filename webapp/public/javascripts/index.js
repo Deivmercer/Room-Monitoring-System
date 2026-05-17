@@ -153,8 +153,14 @@ function onThresholdReceived(data, type, deviceId) {
 function onRoomUpdated(newRoom, deviceId) {
 
     let previousRoom = devices.indexOf(deviceId);
-    if (previousRoom !== -1)
+    if (previousRoom !== -1) {
         devices[previousRoom] = "";
+        minTemperatureThreshold[newRoom - 1] = minTemperatureThreshold[previousRoom];
+        maxTemperatureThreshold[newRoom - 1] = maxTemperatureThreshold[previousRoom];
+        signalStrengthThreshold[newRoom - 1] = signalStrengthThreshold[previousRoom];
+        if (previousRoom === currentRoom)
+            deviceStatus.innerText = "not connected";
+    }
     devices[newRoom - 1] = deviceId;
 }
 
@@ -200,7 +206,7 @@ function changeRoom(room) {
     } else {
         let value = lastSignalStrengthValues[currentRoom];
         lastSignalStrength.innerText = value
-        if (value > signalStrengthThreshold[room])
+        if (value < signalStrengthThreshold[room])
             signalStrengthWarning.style.display = "block";
         else
             signalStrengthWarning.style.display = "none";
