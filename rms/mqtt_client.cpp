@@ -99,12 +99,12 @@ void mqttUpdateRoom(String topic, String room)
     int newRoomNumber = room.charAt(0) - 48;
     if (newRoomNumber < 1 || newRoomNumber > MAX_ROOMS)
     {
-        publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), "error", F("Room ID out of range"));
+        mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), "error", F("Room ID out of range"));
         return;
     }
 
     setRoomNumber(newRoomNumber);
-    publishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), "ok");
+    mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), "ok");
     mqttPublishDeviceRoom();
 }
 
@@ -201,4 +201,9 @@ void mqttPublishThresholds()
 
     String signalStrengthThreshold = String(getSignalStrengthThreshold());
     mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_SIGNAL).c_str(), signalStrengthThreshold, true, 0);
+}
+
+void mqttPublishAlarm(const char* topic, String message)
+{
+    mqttClient.publish((mqttMainTopic + topic).c_str(), message, false, 0);
 }

@@ -1,5 +1,6 @@
 const MQTT_BROKER_URL = "ws://davemercer.moe:9001"; // Browsers only support websockets
 const MQTT_TOPIC_DEVICE = "rms/devices"
+const MQTT_TOPIC_ALARMS = "rms/+/alarms/#"
 const MQTT_SUBTOPIC_SENSORS = "/sensors/#"
 const MQTT_SUBTOPIC_ROOM = "/room"
 const MQTT_SUBTOPIC_ACTIVE = "/active"
@@ -20,6 +21,7 @@ function mqttConnect(clientId, username, password, callback) {
     client.on("connect", () => {
         callback();
         subscribeTopic(MQTT_TOPIC_DEVICE);
+        subscribeTopic(MQTT_TOPIC_ALARMS);
     });
 
     client.on("message", (topic, message) => {
@@ -53,6 +55,8 @@ function mqttConnect(clientId, username, password, callback) {
             onRoomUpdated(message, deviceId)
         else if (topic.endsWith(MQTT_SUBTOPIC_ACTIVE))
             onDeviceActiveReceived(message.toString(), deviceId);
+        else if (topic.includes("/alarms/"))
+            onAlarmReceived(deviceId);
         else
             console.log("Unknown topic: " + topic);
     });

@@ -161,6 +161,7 @@ function onRoomUpdated(newRoom, deviceId) {
 function changeRoom(room) {
 
     room.classList.remove("room");
+    room.classList.remove("room-alarm");
     if (currentRoom !== -1) {
         let button = roomButtons[currentRoom];
         button.classList.add("room");
@@ -218,4 +219,18 @@ function onDeviceDisconnected(deviceId) {
 
     if (room === currentRoom)
         deviceStatus.innerText = "not connected";
+}
+
+function onAlarmReceived(deviceId) {
+
+    let room = devices.indexOf(deviceId);
+    if (room === currentRoom)
+        return;
+
+    let roomButton = roomButtons[room];
+    if (roomButton.classList.contains("room-alarm"))
+        return;
+
+    roomButton.classList.add("room-alarm");
+    roomButton.classList.remove("room");
 }

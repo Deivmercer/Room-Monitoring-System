@@ -118,7 +118,6 @@ void loop()
             Serial.println(F("ERROR: Unknown state"));
     }
 
-    updateLEDs();
     loopWebserver();
     loopMqttClient();
 }
@@ -186,6 +185,26 @@ void readDht()
     lastTemperature = heatIndex;
     lastHumidity = humidity;
 
+    if (lastTemperature <= lowTemperatureThreshold)
+    {
+        digitalWrite(HIGH_TEMPERATURE_LED, LOW);
+        digitalWrite(LOW_TEMPERATURE_LED, HIGH);
+        if (state == NORMAL)
+            mqttPublishAlarm(MQTT_SUBTOPIC_ALARMS_TEMPERATURE, F("Temperature is too low!"));
+    }
+    else if (lastTemperature >= highTemperatureThreshold)
+    {
+        digitalWrite(HIGH_TEMPERATURE_LED, HIGH);
+        digitalWrite(LOW_TEMPERATURE_LED, LOW);
+        if (state == NORMAL)
+            mqttPublishAlarm(MQTT_SUBTOPIC_ALARMS_TEMPERATURE, F("Temperature is too high!"));
+    }
+    else
+    {
+        digitalWrite(HIGH_TEMPERATURE_LED, LOW);
+        digitalWrite(LOW_TEMPERATURE_LED, LOW);
+    }
+
     mqttPublishData(MQTT_SUBTOPIC_TEMPERATURE, String(lastTemperature));
     mqttPublishData(MQTT_SUBTOPIC_HUMIDITY, String(lastTemperature));
 }
@@ -193,6 +212,16 @@ void readDht()
 void readSignalStrength()
 {
     lastSignalStrength = getSignalStrength();
+
+    if (lastSignalStrength < signalStrengthThreshold)
+    {
+        digitalWrite(SIGNAL_STRENGTH_LED, LOW);
+        if (state == NORMAL)
+            mqttPublishAlarm(MQTT_SUBTOPIC_ALARMS_SIGNAL, F("WiFi signal is too weak!"));
+    }
+    else
+        digitalWrite(SIGNAL_STRENGTH_LED, HIGH);
+
     mqttPublishData(MQTT_SUBTOPIC_SIGNAL, String(lastSignalStrength));
 }
 
@@ -276,30 +305,6 @@ void configureRoomNumber()
     lcd.setCursor(0, 1);
     lcd.print("#");
     lcd.print(roomNumber);
-}
-
-void updateLEDs()
-{
-    if (lastTemperature <= lowTemperatureThreshold)
-    {
-        digitalWrite(HIGH_TEMPERATURE_LED, LOW);
-        digitalWrite(LOW_TEMPERATURE_LED, HIGH);
-    }
-    else if (lastTemperature >= highTemperatureThreshold)
-    {
-        digitalWrite(HIGH_TEMPERATURE_LED, HIGH);
-        digitalWrite(LOW_TEMPERATURE_LED, LOW);
-    }
-    else
-    {
-        digitalWrite(HIGH_TEMPERATURE_LED, LOW);
-        digitalWrite(LOW_TEMPERATURE_LED, LOW);
-    }
-
-    if (lastSignalStrength < signalStrengthThreshold)
-        digitalWrite(SIGNAL_STRENGTH_LED, LOW);
-    else
-        digitalWrite(SIGNAL_STRENGTH_LED, HIGH);
 }
 
 void printToLCD(String displayLine1, String displayLine2)

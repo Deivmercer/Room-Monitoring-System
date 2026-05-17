@@ -41,7 +41,6 @@ void configureLowTemperatureThreshold();
 void configureHighTemperatureThreshold();
 void configureSignalStrengthThreshold();
 void configureRoomNumber();
-void updateLEDs();
 void printToLCD(String displayLine1, String displayLine2);
 void clearLcd();
 void writeReadingsToDB();
