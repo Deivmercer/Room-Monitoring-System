@@ -1,12 +1,13 @@
 {
   "name": "backend",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "start": "node app.js"
   },
   "dependencies": {
     "express": "^5.2.1",
-    "mqtt": "^5.15.1"
+    "mqtt": "^5.15.1",
+    "node-telegram-bot-api": "^0.67.0"
   }
 }
