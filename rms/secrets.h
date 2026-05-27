@@ -9,7 +9,9 @@
 #define INFLUXDB_BUCKET "<influxdb-bucket>"         // bucket name (Use: InfluxDB UI -> Load Data -> Buckets)
 
 // MQTT access
-#define MQTT_BROKER_IP "149.132.178.179"        // IP address of the machine running the MQTT broker
-#define MQTT_CLIENT_ID "esp8266"                // client identifier
-#define MQTT_USERNAME "mqttBroker_user"         // mqtt user's name
-#define MQTT_PASSWORD "mqttBroker_pass"         // mqtt user's password
+#define MQTT_BROKER_IP "149.132.178.179"            // IP address of the machine running the MQTT broker
+#define MQTT_CLIENT_ID "esp8266"                    // client identifier
+#define MQTT_USERNAME "mqttBroker_user"             // mqtt user's name
+#define MQTT_PASSWORD "mqttBroker_pass"             // mqtt user's password
+
+#define OWM_API_KEY "API_KEY"                       // api key from https://home.openweathermap.org/api_keys"

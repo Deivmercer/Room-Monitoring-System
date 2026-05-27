@@ -4,6 +4,7 @@
 #include <LiquidCrystal_I2C.h>
 #include <InfluxDbClient.h>
 #include <EEPROM.h>
+#include <ArduinoJson.h>
 #include "rms.h"
 #include "wifi_client.h"
 #include "webserver.h"
@@ -21,6 +22,9 @@ Ticker updateDataTicker;
 bool updateData = false;
 
 State state;
+
+char weatherCountry[] = WEATHER_DEFAULT_COUNTRY;
+char weatherCity[] = WEATHER_DEFAULT_CITY;
 
 String roomNumber = DEFAULT_ROOM_NUMBER;
 float lowTemperatureThreshold = -1.0;
@@ -108,6 +112,17 @@ void loop()
             updateDisplay();
             writeReadingsToDB(lastTemperature, lastHumidity, lastSignalStrength, -1);
             updateData = false;
+            state = WEATHER;
+            break;
+        case WEATHER:
+            if (!updateData)
+                break;
+            showWeatherInfo();
+            readDht();
+            readSignalStrength();
+            writeReadingsToDB(lastTemperature, lastHumidity, lastSignalStrength, -1);
+            updateData = false;
+            state = NORMAL;
             break;
         case NIGHT_MODE:
             if (!updateData)
@@ -476,4 +491,37 @@ void readEEPROM()
         writeReadingsToDB(data.temperature, data.humidity, data.signalStrength, data.timestamp);
     }
     savedData = 0;
+}
+
+void showWeatherInfo()
+{
+    char request[100];
+    sprintf(request, OWM_QUERY, weatherCity, weatherCity, OWM_API_KEY);
+    String result = sendHttpRequest(OWM_URL, OWM_PORT, request);
+
+    char jsonArray[result.length() + 1];
+    result.toCharArray(jsonArray, sizeof(jsonArray));
+    jsonArray[result.length() + 1] = '\0';
+    StaticJsonDocument<1024> doc;
+    DeserializationError error = deserializeJson(doc, jsonArray);
+
+    if (error)
+    {
+        Serial.print(F("Failed to deserialize JSON: "));
+        Serial.println(error.c_str());
+        return;
+    }
+
+    char buffer[6];
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print(F("Weather:"));
+    lcd.print(doc["weather"][0]["main"].as<String>());
+    lcd.setCursor(0, 1);
+    lcd.print(F("Lo:"));
+    snprintf(buffer, sizeof(buffer), "%.1f", (float) doc["main"]["temp_min"]);
+    lcd.print(buffer);
+    lcd.print(F(" Hi:"));
+    snprintf(buffer, sizeof(buffer), "%.1f", (float) doc["main"]["temp_max"]);
+    lcd.print(buffer);
 }

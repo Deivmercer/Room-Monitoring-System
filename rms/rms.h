@@ -22,9 +22,16 @@
 #define DEFAULT_ROOM_NUMBER "1"
 #define MAX_ROOMS 9
 
+#define OWM_URL "api.openweathermap.org"
+#define OWM_PORT 80
+#define OWM_QUERY "GET /data/2.5/weather?q=%s,%s&units=metric&APPID=%s"
+#define WEATHER_DEFAULT_COUNTRY "it" // ISO3166 country code 
+#define WEATHER_DEFAULT_CITY "Milano"
+
 enum State
 {
     NORMAL,
+    WEATHER,
     NIGHT_MODE,
     NIGHT_MODE_RESTORE,
     CONFIG_LOW_TEMPERATURE,
@@ -69,3 +76,4 @@ void setRoomNumber(int newRoomNumber);
 void setPaused(bool paused);
 void writeDataToEEPROM(time_t timestamp);
 void readEEPROM();
+void showWeatherInfo();

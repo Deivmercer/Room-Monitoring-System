@@ -54,3 +54,37 @@ bool isFirstSetup()
 {
     return isFirstSetup;
 }
+
+String sendHttpRequest(const char* url, int port, char* request)
+{
+    WiFiClient client;
+
+    if (client.connect(url, port))
+    {
+        client.println(request);
+        client.print(F("Host: "));
+        client.println(url);
+        client.println(F("User-Agent: ArduinoWiFi/1.1"));
+        client.println(F("Connection: close"));
+        client.println();
+    } else {
+        Serial.print(F("Connection to "));
+        Serial.print(url);
+        Serial.println(F(" failed!\n"));
+    }
+
+    while (client.connected() && !client.available())
+        delay(1); // Waiting for data
+
+    String result;
+    while (client.connected() || client.available())
+    {   
+        // Reading data
+        char c = client.read();
+        result = result + c;
+    }
+
+    client.stop(); // Closing communication
+
+    return result;
+}
