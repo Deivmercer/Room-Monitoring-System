@@ -25,11 +25,21 @@
 enum State
 {
     NORMAL,
+    NIGHT_MODE,
+    NIGHT_MODE_RESTORE,
     CONFIG_LOW_TEMPERATURE,
     CONFIG_HIGH_TEMPERATURE,
     CONFIG_SIGNAL_STRENGTH,
     CONFIG_ROOM_NUMBER,
     PAUSED
+};
+
+struct RomData
+{
+    float temperature;
+    float humidity;
+    int32_t timestamp;
+    int8_t signalStrength;
 };
 
 void updateState();
@@ -43,7 +53,7 @@ void configureSignalStrengthThreshold();
 void configureRoomNumber();
 void printToLCD(String displayLine1, String displayLine2);
 void clearLcd();
-void writeReadingsToDB();
+void writeReadingsToDB(float temperature, float humidity, int singalStrength, time_t timestamp);
 State getState();
 float getLastTemperature();
 float getLastHumidity();
@@ -57,3 +67,5 @@ void setSignalStrengthThreshold(int newSignalStrengthThreshold);
 String getRoomNumber();
 void setRoomNumber(int newRoomNumber);
 void setPaused(bool paused);
+void writeDataToEEPROM(time_t timestamp);
+void readEEPROM();

@@ -3,6 +3,7 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <InfluxDbClient.h>
+#include <EEPROM.h>
 #include "rms.h"
 #include "wifi_client.h"
 #include "webserver.h"
@@ -28,6 +29,7 @@ int signalStrengthThreshold = -65;
 float lastHumidity = 0;
 float lastTemperature = 0;
 int lastSignalStrength = 0;
+int savedData = 0;
 
 void setup()
 {
@@ -66,10 +68,18 @@ void setup()
     // Init system state
     state = NORMAL;
 
+    // Setting up InfluxDB client
+    client_idb.setWriteOptions(WriteOptions().writePrecision(WritePrecision::S)); // Setting timestamp format
     pointDevice.addTag("room_number", roomNumber);
 
     setupWebserver();
     setupMqtt(isFirstSetup());
+
+    // Retrieving UTC time via NTP
+    configTime(0, 0, "it.pool.ntp.org"); 
+
+    // Init EEPROM
+    EEPROM.begin(512);
 
     Serial.begin(115200);
 }
@@ -87,6 +97,7 @@ void loop()
     } else if (buttonState == HIGH && waitButtonReleased)
         waitButtonReleased = false;
 
+    int32_t now;
     switch (state)
     {
         case NORMAL:
@@ -95,7 +106,16 @@ void loop()
             readDht();
             readSignalStrength();
             updateDisplay();
-            writeReadingsToDB();
+            writeReadingsToDB(lastTemperature, lastHumidity, lastSignalStrength, -1);
+            updateData = false;
+            break;
+        case NIGHT_MODE:
+            if (!updateData)
+                break;
+            now = time(nullptr);
+            readDht();
+            readSignalStrength();
+            writeDataToEEPROM(now);
             updateData = false;
             break;
         case CONFIG_LOW_TEMPERATURE:
@@ -159,6 +179,16 @@ void updateState()
             pointDevice.addTag("room_number", roomNumber);
             lcd.clear();
             mqttPublishDeviceRoom();
+            break;
+        case NIGHT_MODE:
+            updateDataTicker.detach();
+            updateDataTicker.attach(60.0, toggleReadingFlag);
+            break;
+        case NIGHT_MODE_RESTORE:
+            readEEPROM();
+            state = NORMAL;
+            updateDataTicker.detach();
+            updateDataTicker.attach(5.0, toggleReadingFlag);
             break;
         default:
             Serial.println(F("ERROR: Unknown state"));
@@ -330,7 +360,7 @@ void clearLcd()
     lcd.clear();
 }
 
-void writeReadingsToDB()
+void writeReadingsToDB(float temperature, float humidity, int singalStrength, time_t timestamp)
 {
     // Checking server connection
     if (!client_idb.validateConnection())
@@ -342,9 +372,12 @@ void writeReadingsToDB()
     }
 
     pointDevice.clearFields();
-    pointDevice.addField("temperature", lastTemperature);
-    pointDevice.addField("humidity", lastHumidity);
-    pointDevice.addField("signal_strength", lastSignalStrength);
+    pointDevice.addField("temperature", temperature);
+    pointDevice.addField("humidity", humidity);
+    pointDevice.addField("signal_strength", singalStrength);
+    if (timestamp > 0)
+        pointDevice.setTime(timestamp);
+
     if (!client_idb.writePoint(pointDevice))
     {
         printToLCD("Failed to write", "to InfluxDB");
@@ -419,4 +452,28 @@ void setRoomNumber(int newRoomNumber)
 void setPaused(bool paused)
 {
     state = paused ? PAUSED : NORMAL;
+}
+
+void writeDataToEEPROM(time_t timestamp)
+{
+    RomData data = {lastTemperature, lastHumidity, timestamp, lastSignalStrength};
+    EEPROM.put(savedData * sizeof(RomData), data);
+    ++savedData;
+}
+
+void readEEPROM()
+{
+    if (!client_idb.validateConnection())
+    {
+        savedData = 0;
+        return;
+    }
+
+    for (int i = 0; i < savedData; ++i)
+    {
+        RomData data;
+        EEPROM.get(i * sizeof(RomData), data);
+        writeReadingsToDB(data.temperature, data.humidity, data.signalStrength, data.timestamp);
+    }
+    savedData = 0;
 }
