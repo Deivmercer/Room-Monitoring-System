@@ -153,6 +153,9 @@ void loop()
             Serial.println(F("ERROR: Unknown state"));
     }
 
+    if (state == NIGHT_MODE)
+        return;
+
     loopWebserver();
     loopMqttClient();
 }
@@ -196,10 +199,17 @@ void updateState()
             mqttPublishDeviceRoom();
             break;
         case NIGHT_MODE:
+            enterSleep();
+            digitalWrite(HIGH_TEMPERATURE_LED, LOW);
+            digitalWrite(LOW_TEMPERATURE_LED, LOW);
+            digitalWrite(SIGNAL_STRENGTH_LED, HIGH);
+            lcd.clear();
+            lcd.setBacklight(0);
             updateDataTicker.detach();
             updateDataTicker.attach(60.0, toggleReadingFlag);
             break;
         case NIGHT_MODE_RESTORE:
+            exitSleep();
             readEEPROM();
             state = NORMAL;
             updateDataTicker.detach();
@@ -230,6 +240,9 @@ void readDht()
     lastTemperature = heatIndex;
     lastHumidity = humidity;
 
+    if (state == NIGHT_MODE)
+        return;
+
     if (lastTemperature <= lowTemperatureThreshold)
     {
         digitalWrite(HIGH_TEMPERATURE_LED, LOW);
@@ -257,6 +270,9 @@ void readDht()
 void readSignalStrength()
 {
     lastSignalStrength = getSignalStrength();
+
+    if (state == NIGHT_MODE)
+        return;
 
     if (lastSignalStrength < signalStrengthThreshold)
     {

@@ -88,3 +88,16 @@ String sendHttpRequest(const char* url, int port, char* request)
 
     return result;
 }
+
+void enterSleep()
+{
+    WiFi.mode(WIFI_OFF);
+    WiFi.forceSleepBegin();   // enter forced modem sleep
+    delay(10);
+}
+
+void exitSleep()
+{
+    WiFi.forceSleepWake();   // enter forced modem sleep
+    delay(10);
+}
