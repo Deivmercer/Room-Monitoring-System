@@ -32,6 +32,7 @@ enum State
 {
     NORMAL,
     WEATHER,
+    AWAY_MODE,
     NIGHT_MODE,
     NIGHT_MODE_RESTORE,
     CONFIG_LOW_TEMPERATURE,

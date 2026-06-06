@@ -215,6 +215,14 @@ void updateState()
             updateDataTicker.detach();
             updateDataTicker.attach(5.0, toggleReadingFlag);
             break;
+        case AWAY_MODE:
+            digitalWrite(HIGH_TEMPERATURE_LED, LOW);
+            digitalWrite(LOW_TEMPERATURE_LED, LOW);
+            digitalWrite(SIGNAL_STRENGTH_LED, HIGH);
+            lcd.clear();
+            lcd.setBacklight(0);
+            ESP.deepSleep(0);
+            break;
         default:
             Serial.println(F("ERROR: Unknown state"));
     }
