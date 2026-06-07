@@ -45,6 +45,7 @@ const client = mqtt.connect(process.env.MQTT_BROKER_URL, options);
 
 client.on("connect", () => {
     subscribeTopic("rms/devices");
+    subscribeTopic(`rms/+/alarms/#`);
 });
 
 client.on("message", (topic, message) => {
@@ -96,6 +97,15 @@ client.on("message", (topic, message) => {
             default:
                 console.error(`Unknown threshold ${threshold} received in topic ${topic}`);
         }
+    } else if (topic.includes("/alarms/")) {
+        if (devices[id] && devices[id].registered_users.size > 0) {
+            for (let user of devices[id].registered_users) {
+                telegramBot.sendMessage(user, message)
+                    .catch(err => console.error(err));
+            }
+        }
+        else
+            console.log(`Device ${id} has no registered users; ignoring alarm.`);
     }
 
     if (restoreValue)
@@ -114,7 +124,13 @@ function subscribeTopic(topic) {
 
 function handleMqttDevice(message) {
 
-    let json = JSON.parse(message);
+    let json;
+    try {
+        json = JSON.parse(message);
+    } catch (e) {
+        console.error("Could not parse JSON:" + e);
+        return;
+    }
     let deviceTopic = `rms/${json.mac_address}/sensors`;
     if (json.status === "connected") {
         client.subscribe(deviceTopic, (err) => {
@@ -136,7 +152,8 @@ function handleMqttDevice(message) {
                         "temperature": undefined,
                         "humidity": undefined,
                         "signal_strength": undefined
-                    }
+                    },
+                    "registered_users": new Set()
                 };
             }
         });
@@ -144,7 +161,6 @@ function handleMqttDevice(message) {
         subscribeTopic(`rms/${json.mac_address}/room`);
         subscribeTopic(`rms/${json.mac_address}/thresholds/+`);
         subscribeTopic(`rms/${json.mac_address}/active`);
-        subscribeTopic(`rms/${json.mac_address}/alarms`);
     } else if (json.status === "disconnected") {
         client.unsubscribe(deviceTopic, (err) => {
             if (err)
@@ -377,6 +393,45 @@ telegramBot.onText(/\/resume (.+)/, (msg, regex_matches) => {
         });
 });
 
+telegramBot.onText(/\/register (.+)/, (msg, regex_matches) => {
+
+    let id = regex_matches[1];
+    let message;
+    if (devices[id]) {
+        if (devices[id].registered_users.has(msg.chat.id))
+            message = `Device ${id} already registered`;
+        else {
+            devices[id].registered_users.add(msg.chat.id);
+            message = `Registered device ${id}`;
+        }
+    }
+    else
+        message = "Device not found";
+    telegramBot.sendMessage(msg.chat.id, message)
+        .catch(err => {
+            console.error(err);
+        });
+});
+
+telegramBot.onText(/\/unregister (.+)/, (msg, regex_matches) => {
+
+    let id = regex_matches[1];
+    let message;
+    if (devices[id]) {
+        if (devices[id].registered_users.has(msg.chat.id)) {
+            message = `Unregistered device ${id}`;
+            devices[id].registered_users.delete(msg.chat.id);
+        } else
+            message = `Device ${id} is not registered`;
+    }
+    else
+        message = "Device not found";
+    telegramBot.sendMessage(msg.chat.id, message)
+        .catch(err => {
+            console.error(err);
+        });
+});
+
 telegramBot.onText(/.+/, (msg) => {
 
     let message;
@@ -396,7 +451,11 @@ telegramBot.onText(/.+/, (msg) => {
     else if (text.startsWith("/pause"))
         message = "Usage: /pause <device id>";
     else if (text.startsWith("/resume"))
-        message = "Usage: /resume <device ida>";
+        message = "Usage: /resume <device id>";
+    else if (text.startsWith("/register"))
+        message = "Usage: /resume <device id>";
+    else if (text.startsWith("/unregister"))
+        message = "Usage: /resume <device id>";
     else
         message = "Unknown command. Use /help to...";
     telegramBot.sendMessage(msg.chat.id, message)
