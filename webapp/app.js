@@ -200,17 +200,18 @@ telegramBot.onText(/\/sensors (.+)/, (msg, regex_matches) => {
 telegramBot.onText(/\/help/, (msg) => {
 
     let chatId = msg.chat.id;
-
-    telegramBot.sendMessage(chatId, "Comandi disponibili:\n\n" +
-        "/start - \n" +
-        "/devices - \n" +
-        "/get_room <device id> - \n" +
-        "/set_room <device id> <room number> - \n" +
-        "/get_thresholds <device id> - \n" +
-        "/set_threshold <device_id> <threshold> <value> - \n" +
-        "/status <device_id> - \n" +
-        "/pause <device id> - \n" +
-        "/resume <device id> - "
+    telegramBot.sendMessage(chatId, "/:\n\n" +
+        "/devices - List all available devices\n\n" +
+        "/sensors <device_id> - Retrieve the most recent sensor readings from the specified device\n\n" +
+        "/get_room <device_id> - Get the room assigned to the specified device\n\n" +
+        "/set_room <device_id> <room_number> - Assign the specified device to a room\n\n" +
+        "/get_thresholds <device_id> - Display the current alarm thresholds configured for the specified device\n\n" +
+        "/set_threshold <device_id> <threshold> <value> - Set the value of a threshold used for alert generation on the specified device\n\n" +
+        "/status <device_id> - Display the current status of the specified device\n\n" +
+        "/pause <device_id> -  Pause data acquisition on the specified device\n\n" +
+        "/resume <device_id> - Resume data acquisition on the specified device\n\n" +
+        "/register <device_id> - Register to receive alarm notifications from the specified device\n\n" +
+        "/unregister <device_id> - Stop receiving alarm notifications from the specified device"
     ).catch(err => {
         console.error(err);
     })
@@ -437,25 +438,25 @@ telegramBot.onText(/.+/, (msg) => {
     let message;
     let text = msg.text;
     if (text.startsWith("/sensors"))
-        message = "Usage: /sensors <device id>";
+        message = "Usage: /sensors <device_id>";
     else if (text.startsWith("/get_room"))
-        message = "Usage: /get_room <device id>";
+        message = "Usage: /get_room <device_id>";
     else if (text.startsWith("/set_room"))
-        message = "Usage: /set_room <device id> <room number>";
+        message = "Usage: /set_room <device_id> <room_number>";
     else if (text.startsWith("/get_thresholds"))
-        message = "Usage: /get_thresholds <device id>";
+        message = "Usage: /get_thresholds <device_id>";
     else if (text.startsWith("/set_threshold"))
         message = "Usage: /set_threshold <device_id> <threshold> <value>";
     else if (text.startsWith("/status"))
         message = "Usage: /status <device_id>";
     else if (text.startsWith("/pause"))
-        message = "Usage: /pause <device id>";
+        message = "Usage: /pause <device_id>";
     else if (text.startsWith("/resume"))
-        message = "Usage: /resume <device id>";
+        message = "Usage: /resume <device_id>";
     else if (text.startsWith("/register"))
-        message = "Usage: /resume <device id>";
+        message = "Usage: /register <device_id>";
     else if (text.startsWith("/unregister"))
-        message = "Usage: /resume <device id>";
+        message = "Usage: /unregister <device_id>";
     else
         message = "Unknown command. Use /help to...";
     telegramBot.sendMessage(msg.chat.id, message)
