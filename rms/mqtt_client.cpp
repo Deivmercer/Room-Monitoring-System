@@ -67,6 +67,7 @@ void connectToMqttBroker()
     mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MIN_TEMP_UPDATE);
     mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MAX_TEMP_UPDATE);
     mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_SIGNAL_UPDATE);
+    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_POWER_SAVING_UPDATE);
 
     JsonDocument json;
     json["status"] = F("connected");
@@ -75,6 +76,7 @@ void connectToMqttBroker()
     size_t length = serializeJson(json, buffer);
     mqttClient.publish(MQTT_TOPIC_DEVICES, buffer, length, false, 2);
     mqttPublishDeviceActive();
+    mqttPublishPowerSavingMode();
 
     if (doFirstSetup)
         mqttFirstSetup();
@@ -96,6 +98,8 @@ void onMqttMessageReceived(String& topic, String& payload)
         mqttUpdateTemperatureMaxThreshold(topic, payload);
     else if (topic.endsWith(MQTT_SUBTOPIC_THRESHOLDS_SIGNAL_UPDATE))
         mqttUpdateSignalStrengthThreshold(topic, payload);
+    else if (topic.endsWith(MQTT_SUBTOPIC_POWER_SAVING_UPDATE))
+        mqttUpdatePowerSavingMode(payload);
     else
         Serial.println("Ignored");
 }
@@ -230,5 +234,54 @@ void mqttFirstSetup()
     mqttPublishThresholds();
     mqttPublishDeviceRoom();
     mqttPublishDeviceActive();
+    mqttPublishPowerSavingMode();
     doFirstSetup = false;
+}
+
+void mqttUpdatePowerSavingMode(String mode)
+{
+    State newState;
+    if (mode == F("normal"))
+        newState = NORMAL;
+    else if (mode == "away")
+        newState = AWAY_MODE;
+    else if (mode == "night")
+        newState = NIGHT_MODE;
+    else
+    {
+        Serial.print("Unrecognized mode ");
+        Serial.println(mode);
+    }
+
+    setPowerSavingMode(newState);
+}
+
+void mqttPublishPowerSavingMode()
+{
+    State state = getState();
+    String stateString;
+    switch (state)
+    {
+        case NORMAL:
+        case WEATHER:
+        case NIGHT_MODE_RESTORE:
+        case CONFIG_LOW_TEMPERATURE:
+        case CONFIG_HIGH_TEMPERATURE:
+        case CONFIG_SIGNAL_STRENGTH:
+        case CONFIG_ROOM_NUMBER:
+        case PAUSED:
+            stateString = F("none");
+            break;
+        case AWAY_MODE:
+            stateString = F("away");
+            break;
+        case NIGHT_MODE:
+            stateString = F("night");
+            break;
+        default:
+            Serial.print("Unrecognizeda mode ");
+            Serial.println(state);
+    }
+
+    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_POWER_SAVING).c_str(), stateString, true, 2);
 }

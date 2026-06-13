@@ -7,6 +7,7 @@ const MQTT_SUBTOPIC_ACTIVE = "/active"
 const MQTT_SUBTOPIC_THRESHOLDS = "/thresholds/+"
 const MQTT_SUBTOPIC_THRESHOLDS_ACKS = "/thresholds/+/update/ack"
 const MQTT_SUBTOPIC_ROOM_ACKS = "/room/update/ack"
+const MQTT_SUBTOPIC_POWER_SAVING_MODES = "/power_saving_mode"
 let client;
 
 function mqttConnect(clientId, username, password, callback) {
@@ -63,6 +64,8 @@ function mqttConnect(clientId, username, password, callback) {
             onDeviceActiveReceived(message.toString(), deviceId);
         else if (topic.includes("/alarms/"))
             onAlarmReceived(deviceId);
+        else if (topic.endsWith("power_saving_mode"))
+            onPowerSavingModeUpdated(message.toString(), deviceId);
         else
             console.log("Unknown topic: " + topic);
     });
@@ -78,6 +81,7 @@ function mqttSubscribeDevice(device) {
     subscribeTopic(mainTopic + MQTT_SUBTOPIC_THRESHOLDS);
     subscribeTopic(mainTopic + MQTT_SUBTOPIC_THRESHOLDS_ACKS);
     subscribeTopic(mainTopic + MQTT_SUBTOPIC_ROOM_ACKS);
+    subscribeTopic(mainTopic + MQTT_SUBTOPIC_POWER_SAVING_MODES);
 }
 
 function subscribeTopic(topic) {
@@ -114,4 +118,11 @@ function publishThresholds() {
     client.publish(`rms/${deviceId}/thresholds/max_temperature/update`, highTemperature.value);
     client.publish(`rms/${deviceId}/thresholds/min_temperature/update`, lowTemperature.value);
     client.publish(`rms/${deviceId}/thresholds/signal_strength/update`, signalStrength.value);
+}
+
+function setAwayMode() {
+
+    let deviceId = devices[currentRoom];
+    client.publish(`rms/${deviceId}/power_saving_mode/update`, "away");
+    awayButton.disabled = true;
 }

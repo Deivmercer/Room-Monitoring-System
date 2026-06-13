@@ -19,11 +19,14 @@ const highTemperature = document.getElementById("high_temperature");
 const signalStrength = document.getElementById("signal_strength");
 const temperatureWarning = document.getElementById("temperature_warning");
 const signalStrengthWarning = document.getElementById("signal_strength_warning");
+const powerSavingMode = document.getElementById("power_saving_mode");
+const awayButton = document.getElementById("away_button");
 document.getElementById("login_button").addEventListener("click", login);
 document.getElementById("update_room").addEventListener("click", publishRoomNumber);
 document.getElementById("update_thresholds").addEventListener("click", publishThresholds);
 resumeButton.addEventListener("click", resumeDevice);
 pauseButton.addEventListener("click", pauseDevice);
+awayButton.addEventListener("click", setAwayMode);
 newRoomNumber.max = MAX_ROOM_NUMBER;
 lowTemperature.min = MIN_TEMPERATURE_THRESHOLD;
 lowTemperature.max = MAX_TEMPERATURE_THRESHOLD;
@@ -40,6 +43,7 @@ let signalStrengthThreshold = [0, 0, 0, 0, 0, 0, 0, 0, 0];
 let lastTemperatureValues = [null, null, null, null, null, null, null, null, null];
 let lastHumidityValues = [null, null, null, null, null, null, null, null, null];
 let lastSignalStrengthValues = [null, null, null, null, null, null, null, null, null];
+let powerSavingModes = ["none", "none", "none", "none", "none", "none", "none", "none", "none"];
 
 const roomButtons = document.querySelectorAll(".room");
 for (let room of roomButtons) {
@@ -216,6 +220,9 @@ function changeRoom(room) {
     lowTemperature.value = minTemperatureThreshold[currentRoom];
     highTemperature.value = maxTemperatureThreshold[currentRoom];
     signalStrength.value = signalStrengthThreshold[currentRoom];
+    powerSavingMode.innerText = powerSavingModes[currentRoom];
+
+    awayButton.disabled = powerSavingModes[currentRoom] !== "none";
 }
 
 function onDeviceDisconnected(deviceId) {
@@ -240,3 +247,16 @@ function onAlarmReceived(deviceId) {
     roomButton.classList.add("room-alarm");
     roomButton.classList.remove("room");
 }
+
+function onPowerSavingModeUpdated(mode, deviceId) {
+
+    let room = devices.indexOf(deviceId);
+    powerSavingModes[room] = mode;
+
+    if (room !== currentRoom)
+        return;
+
+    powerSavingMode.innerText = mode;
+    awayButton.disabled = mode !== "none";
+}
+

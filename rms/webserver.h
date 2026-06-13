@@ -10,6 +10,7 @@ void handleChangeRoom();
 void handlePause();
 void handleResume();
 void handleWot();
+void handleAway();
 String getErrorPage(String errorMessage);
 
 #endif // RMS_WEBSERVER_H

@@ -40,6 +40,10 @@ button,
     &:active {
         background-color: #158c75;
     }
+
+    &:disabled {
+        background-color: #5b6363;
+    }
 }
 
 p {

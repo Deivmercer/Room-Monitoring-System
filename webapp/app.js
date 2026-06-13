@@ -153,7 +153,8 @@ function handleMqttDevice(message) {
                         "humidity": undefined,
                         "signal_strength": undefined
                     },
-                    "registered_users": new Set()
+                    "registered_users": new Set(),
+                    "power_saving_mode": "none"
                 };
             }
         });

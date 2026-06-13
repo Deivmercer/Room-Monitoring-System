@@ -20,6 +20,8 @@
 #define MQTT_SUBTOPIC_THRESHOLDS_SIGNAL_UPDATE "/thresholds/signal_strength/update"
 #define MQTT_SUBTOPIC_ALARMS_TEMPERATURE "/alarms/temperature"
 #define MQTT_SUBTOPIC_ALARMS_SIGNAL "/alarms/signal_strength"
+#define MQTT_SUBTOPIC_POWER_SAVING "/power_saving_mode"
+#define MQTT_SUBTOPIC_POWER_SAVING_UPDATE "/power_saving_mode/update"
 
 void setupMqtt(bool firstSetup);
 void loopMqttClient();
@@ -38,5 +40,7 @@ void mqttUpdateSignalStrengthThreshold(String topic, String threshold);
 void mqttPublishThresholds();
 void mqttPublishAlarm(const char* topic, String message);
 void mqttFirstSetup();
+void mqttUpdatePowerSavingMode(String mode);
+void mqttPublishPowerSavingMode();
 
 #endif // RMS_MQTT_CLIENT_H

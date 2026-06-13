@@ -549,3 +549,18 @@ void showWeatherInfo()
     snprintf(buffer, sizeof(buffer), "%.1f", (float) doc["main"]["temp_max"]);
     lcd.print(buffer);
 }
+
+void setPowerSavingMode(State mode)
+{
+    if (mode == NIGHT_MODE || mode == AWAY_MODE)
+        state = mode;
+    else
+    {
+        Serial.print("Unrecognized power saving mode: ");
+        Serial.println(mode);
+        return;
+    }
+
+    mqttPublishPowerSavingMode();
+    updateState();
+}

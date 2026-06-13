@@ -17,6 +17,7 @@ void setupWebserver()
     server.on("/resume", handleResume);
     server.on("/change_room", handleChangeRoom);
     server.on("/wot", handleWot);
+    server.on("/away", handleAway);
     server.onNotFound(handleNotFound);
     server.begin();
 }
@@ -61,6 +62,7 @@ void handleRoot()
         html += F("<p>Status: paused</p>\n");
     else
         html += F("<p>Status: active</p>\n");
+    html += F(  "<p>Power saving mode: none</p>\n");
 
     html += F(  "<p>Room: #") + roomNumber + F("</p>\n");
 
@@ -93,8 +95,10 @@ void handleRoot()
                 "</form>\n"
         );
     }
-
-    html += F(  "<br>\n"
+    html += F(  "<form action='/away' method='post'>\n"
+                    "<input class='button' type='submit' value='Away'/>\n"
+                "</form>\n"
+                "<br>\n"
                 "<h1>Update room ID:</h1>\n"
                 "<form action='/change_room' method='post'>\n"
                     "<p>\n"
@@ -221,6 +225,12 @@ void handleResume()
     server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
     server.send(301);
     mqttPublishDeviceActive();
+}
+
+void handleAway()
+{
+    server.send(200);
+    setPowerSavingMode(AWAY_MODE);
 }
 
 void handleWot()
