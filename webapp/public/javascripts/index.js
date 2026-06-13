@@ -162,7 +162,7 @@ function onRoomUpdated(newRoom, deviceId) {
         minTemperatureThreshold[newRoom - 1] = minTemperatureThreshold[previousRoom];
         maxTemperatureThreshold[newRoom - 1] = maxTemperatureThreshold[previousRoom];
         signalStrengthThreshold[newRoom - 1] = signalStrengthThreshold[previousRoom];
-        if (previousRoom === currentRoom)
+        if (previousRoom === currentRoom && Number(newRoom) - 1 !== previousRoom)
             deviceStatus.innerText = "not connected";
     }
     devices[newRoom - 1] = deviceId;
