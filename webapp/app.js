@@ -27,7 +27,7 @@ app.get("/devices", (req, res) => {
     let ids = [];
     for (let device of Object.keys(devices))
         ids.push(device);
-    res.send(ids);
+    res.set("ETag", "").send(ids);
 });
 
 app.use((req, res, next) => {
