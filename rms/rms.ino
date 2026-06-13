@@ -209,6 +209,8 @@ void updateState()
             updateDataTicker.attach(60.0, toggleReadingFlag);
             break;
         case NIGHT_MODE_RESTORE:
+            lcd.setBacklight(255);
+            printToLCD("Saving night", "data...");
             exitSleep();
             readEEPROM();
             state = NORMAL;

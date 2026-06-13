@@ -99,5 +99,6 @@ void enterSleep()
 void exitSleep()
 {
     WiFi.forceSleepWake();   // enter forced modem sleep
+    setupWifi();
     delay(10);
 }
