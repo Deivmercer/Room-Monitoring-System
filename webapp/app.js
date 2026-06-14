@@ -230,14 +230,27 @@ function restoreSignalStrengthThreshld(deviceId) {
 
 function restoreNightModeConfig(deviceId) {
 
-    client.publishAsync(`rms/${deviceId}/night_mode_config/update`, JSON.stringify({
+    let message = JSON.stringify({
         "startHour": devices[deviceId].night_mode.start_hour,
         "startMinute": devices[deviceId].night_mode.start_minute,
         "endHour": devices[deviceId].night_mode.end_hour,
         "endMinute": devices[deviceId].night_mode.end_minute
-    })).then(() => {
-        subscribeTopic(`rms/${deviceId}/night_mode_config`);
-    })
+    });
+
+    if (devices[deviceId].night_mode.start_hour === -1) {
+        // Clearing retained value without sending the default (invalid) value
+        let options = {
+            "qos": 2,
+            "retain": true
+        }
+        client.publishAsync(`rms/${deviceId}/night_mode_config`, message, options).then(() => {
+            subscribeTopic(`rms/${deviceId}/night_mode_config`);
+        })
+    } else {
+        client.publishAsync(`rms/${deviceId}/night_mode_config/update`, message).then(() => {
+            subscribeTopic(`rms/${deviceId}/night_mode_config`);
+        })
+    }
 }
 
 telegramBot.onText(/\/sensors (.+)/, (msg, regex_matches) => {
