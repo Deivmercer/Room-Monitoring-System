@@ -25,8 +25,11 @@ app.use("/", indexRouter);
 
 app.get("/devices", (req, res) => {
     let ids = [];
-    for (let device of Object.keys(devices))
+    for (let device of Object.keys(devices)) {
+        if (!devices[device].connected)
+            continue;
         ids.push(device);
+    }
     res.set("ETag", "").send(ids);
 });
 
@@ -138,24 +141,30 @@ function handleMqttDevice(message) {
                 console.error(err);
             else {
                 console.log(`Subscribed to ${deviceTopic}`);
-                devices[json.mac_address] = {
-                    "id": json.mac_address,
-                    "is_active": true,
-                    "restored": false,
-                    "room": undefined,
-                    "thresholds": {
-                        "min_temperature": undefined,
-                        "max_temperature": undefined,
-                        "signal_strength": undefined,
-                    },
-                    "sensors": {
-                        "temperature": undefined,
-                        "humidity": undefined,
-                        "signal_strength": undefined
-                    },
-                    "registered_users": new Set(),
-                    "power_saving_mode": "none"
-                };
+                if (json.mac_address in devices)
+                    devices[json.mac_address].connected = true;
+                else
+                {
+                    devices[json.mac_address] = {
+                        "id": json.mac_address,
+                        "connected": true,
+                        "is_active": true,
+                        "restored": false,
+                        "room": undefined,
+                        "thresholds": {
+                            "min_temperature": undefined,
+                            "max_temperature": undefined,
+                            "signal_strength": undefined,
+                        },
+                        "sensors": {
+                            "temperature": undefined,
+                            "humidity": undefined,
+                            "signal_strength": undefined
+                        },
+                        "registered_users": new Set(),
+                        "power_saving_mode": "none"
+                    };
+                }
             }
         });
         subscribeTopic(`rms/${json.mac_address}/sensors/#`);
@@ -168,7 +177,7 @@ function handleMqttDevice(message) {
                 console.error(err);
             else {
                 console.log(`Unsubscribed from ${deviceTopic}`);
-                delete devices[json.mac_address];
+                devices[json.mac_address].connected = false;
             }
         });
     }
