@@ -218,6 +218,9 @@ function handleMqttDevice(message) {
                 devices[json.mac_address].thresholds.max_temperature.restored = false;
                 devices[json.mac_address].thresholds.signal_strength.restored = false;
                 devices[json.mac_address].night_mode.restored = false;
+                for (let chatId of devices[json.mac_address].registered_users)
+                    telegramBot.sendMessage(chatId, `Device ${json.mac_address} disconnected`)
+                        .catch(err => console.error(err));
             }
         });
     }
