@@ -315,12 +315,15 @@ telegramBot.onText(/\/help/, (msg) => {
         "/get_room <device_id> - Get the room assigned to the specified device\n\n" +
         "/set_room <device_id> <room_number> - Assign the specified device to a room\n\n" +
         "/get_thresholds <device_id> - Display the current alarm thresholds configured for the specified device\n\n" +
-        "/set_threshold <device_id> <threshold> <value> - Set the value of a threshold used for alert generation on the specified device\n\n" +
+        "/set_threshold <device_id> <threshold> <value> - Set the value of a threshold (min_temperature, max_temperature, or signal_strength) used for alert generation on the specified device\n\n" +
         "/status <device_id> - Display the current status of the specified device\n\n" +
         "/pause <device_id> -  Pause data acquisition on the specified device\n\n" +
         "/resume <device_id> - Resume data acquisition on the specified device\n\n" +
         "/register <device_id> - Register to receive alarm notifications from the specified device\n\n" +
-        "/unregister <device_id> - Stop receiving alarm notifications from the specified device"
+        "/unregister <device_id> - Stop receiving alarm notifications from the specified device\n\n" +
+        "/set_away <device_id> - Start the away mode on the specified device\n\n" +
+        "/get_night_mode <device_id> - Display the night mode configuration of the specified device\n\n" +
+        "/set_night_mode <device_id> <time_config> <hours>:<minutes> - Set the night mode time configuration (start_time or end_time) on the specified device"
     ).catch(err => {
         console.error(err);
     })
@@ -545,6 +548,78 @@ telegramBot.onText(/\/unregister (.+)/, (msg, regex_matches) => {
         });
 });
 
+telegramBot.onText(/\/set_away (.+)/, (msg, regex_matches) => {
+
+    let id = regex_matches[1];
+    let message;
+    if (devices[id]) {
+        client.publish(`rms/${id}/power_saving_mode/update`, "away");
+        message = `Starting away mode on device ${id}`;
+    }
+    else
+        message = "Device not found";
+    telegramBot.sendMessage(msg.chat.id, message)
+        .catch(err => {
+            console.error(err);
+        });
+});
+
+telegramBot.onText(/\/get_night_mode (.+)/, (msg, regex_matches) => {
+
+    let id = regex_matches[1];
+    let message;
+    if (devices[id]) {
+        let config = devices[id].night_mode;
+        message = `Device ${id} night mode config:\n\n` +
+            `- Start time: ${config.start_hour}:${config.start_minute}\n` +
+            `- End time: ${config.end_hour}:${config.end_minute}`
+    }
+    else
+        message = "Device not found";
+    telegramBot.sendMessage(msg.chat.id, message)
+        .catch(err => {
+            console.error(err);
+        });
+});
+
+telegramBot.onText(/\/set_night_mode (.+) (start_time|end_time) (\d+):(\d+)/, (msg, regex_matches) => {
+
+    let id = regex_matches[1];
+    let message;
+    if (devices[id]) {
+        let hour = parseInt(regex_matches[3]);
+        let minutes = parseInt(regex_matches[4]);
+        if (hour < 0 || hour > 23)
+            message = "Hours must be in the 0-23 range";
+        else if (minutes < 0 || minutes > 59)
+            message = "Minutes must be in the 0-59 range";
+        else {
+            let config_request = regex_matches[2];
+            if (config_request === "start_time") {
+                devices[id].night_mode.start_hour = hour;
+                devices[id].night_mode.start_minute = minutes;
+                message = `Updated night mode start time for device ${id}`;
+            } else {
+                devices[id].night_mode.end_hour = hour;
+                devices[id].night_mode.end_minute = minutes;
+                message = `Updated night mode end time for device ${id}`;
+            }
+            client.publish(`rms/${id}/night_mode_config/update`, JSON.stringify({
+                "startHour": devices[id].night_mode.start_hour,
+                "startMinute": devices[id].night_mode.start_minute,
+                "endHour": devices[id].night_mode.end_hour,
+                "endMinute": devices[id].night_mode.end_minute
+            }));
+        }
+    }
+    else
+        message = "Device not found";
+    telegramBot.sendMessage(msg.chat.id, message)
+        .catch(err => {
+            console.error(err);
+        });
+});
+
 telegramBot.onText(/.+/, (msg) => {
 
     let message;
@@ -569,6 +644,12 @@ telegramBot.onText(/.+/, (msg) => {
         message = "Usage: /register <device_id>";
     else if (text.startsWith("/unregister"))
         message = "Usage: /unregister <device_id>";
+    else if (text.startsWith("/set_away"))
+        message = "Usage: /set_away <device_id>";
+    else if (text.startsWith("/get_night_mode"))
+        message = "Usage: /get_night_mode <device_id>";
+    else if (text.startsWith("/set_night_mode"))
+        message = "Usage: /set_night_mode <device_id> <time_config> <hours>:<minutes>";
     else
         message = "Unknown command. Use /help to...";
     telegramBot.sendMessage(msg.chat.id, message)
