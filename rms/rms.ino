@@ -79,7 +79,7 @@ void setup()
     pointDevice.addTag("room_number", roomNumber);
 
     setupWebserver();
-    setupMqtt(isFirstSetup());
+    setupMqtt();
 
     // Retrieving UTC time via NTP
     configTime(0, 0, "it.pool.ntp.org"); 

@@ -12,15 +12,11 @@ MQTTClient mqttClient(MQTT_BUFFER_SIZE);
 
 String mqttMainTopic;
 
-bool doFirstSetup;
-
-void setupMqtt(bool firstSetup)
+void setupMqtt()
 {
     // Setup MQTT
     mqttClient.begin(MQTT_BROKER_IP, 1883, networkClient);
     mqttClient.onMessage(onMqttMessageReceived);
-
-    doFirstSetup = firstSetup;
 }
 
 void loopMqttClient()
@@ -78,9 +74,6 @@ void connectToMqttBroker()
     mqttClient.publish(MQTT_TOPIC_DEVICES, buffer, length, false, 2);
     mqttPublishDeviceActive();
     mqttPublishPowerSavingMode();
-
-    if (doFirstSetup)
-        mqttFirstSetup();
 }
 
 void onMqttMessageReceived(String& topic, String& payload)
@@ -228,15 +221,6 @@ void mqttPublishThresholds()
 void mqttPublishAlarm(const char* topic, String message)
 {
     mqttClient.publish((mqttMainTopic + topic).c_str(), message, false, 0);
-}
-
-void mqttFirstSetup()
-{
-    mqttPublishThresholds();
-    mqttPublishDeviceRoom();
-    mqttPublishDeviceActive();
-    mqttPublishPowerSavingMode();
-    doFirstSetup = false;
 }
 
 void mqttUpdatePowerSavingMode(String mode)

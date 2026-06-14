@@ -25,7 +25,7 @@
 #define MQTT_SUBTOPIC_NIGHT_MODE_CONFIG "/night_mode_config"
 #define MQTT_SUBTOPIC_NIGHT_MODE_CONFIG_UPDATE "/night_mode_config/update"
 
-void setupMqtt(bool firstSetup);
+void setupMqtt();
 void loopMqttClient();
 void connectToMqttBroker();
 void onMqttMessageReceived(String& topic, String& payload);
