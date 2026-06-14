@@ -76,26 +76,34 @@ client.on("message", (topic, message) => {
     } else if (topic.endsWith("/active")) {
         devices[id].is_active = message.toString() === "true";
     } else if (topic.endsWith("/room")) {
-        if (!devices[id].room)
+        if (!devices[id].room.restored) {
             restoreValue = true;
-        devices[id].room = message;
+            devices[id].room.restored = true;
+        }
+        devices[id].room.number = message;
     } else if (topic.includes("/thresholds/")) {
         let threshold = topic.split("/thresholds/")[1].split("/")[0];
         switch (threshold) {
             case "min_temperature":
-                if (!devices[id].thresholds.min_temperature)
+                if (!devices[id].thresholds.min_temperature.restored) {
                     restoreValue = true;
-                devices[id].thresholds.min_temperature = message;
+                    devices[id].thresholds.min_temperature.restored = true;
+                }
+                devices[id].thresholds.min_temperature.value = message;
                 break;
             case "max_temperature":
-                if (!devices[id].thresholds.max_temperature)
+                if (!devices[id].thresholds.max_temperature.restored) {
                     restoreValue = true;
-                devices[id].thresholds.max_temperature = message;
+                    devices[id].thresholds.max_temperature.restored = true;
+                }
+                devices[id].thresholds.max_temperature.value = message;
                 break;
             case "signal_strength":
-                if (!devices[id].thresholds.signal_strength)
+                if (!devices[id].thresholds.signal_strength.restored) {
                     restoreValue = true;
-                devices[id].thresholds.signal_strength = message;
+                    devices[id].thresholds.signal_strength.restored = true;
+                }
+                devices[id].thresholds.signal_strength.value = message;
                 break;
             default:
                 console.error(`Unknown threshold ${threshold} received in topic ${topic}`);
@@ -111,8 +119,8 @@ client.on("message", (topic, message) => {
             console.log(`Device ${id} has no registered users; ignoring alarm.`);
     }
 
-    if (restoreValue)
-        client.publish(`${topic}/update`, message);
+    // if (restoreValue)
+    //     client.publish(`${topic}/update`, message);
 });
 
 function subscribeTopic(topic) {
@@ -143,44 +151,98 @@ function handleMqttDevice(message) {
                 console.log(`Subscribed to ${deviceTopic}`);
                 if (json.mac_address in devices)
                     devices[json.mac_address].connected = true;
-                else
-                {
+                else {
                     devices[json.mac_address] = {
                         "id": json.mac_address,
                         "connected": true,
                         "is_active": true,
-                        "restored": false,
-                        "room": undefined,
+                        "room": {
+                            "number": 1,
+                            "restored": true
+                        },
                         "thresholds": {
-                            "min_temperature": undefined,
-                            "max_temperature": undefined,
-                            "signal_strength": undefined,
+                            "min_temperature": {
+                                "value": -1.00,
+                                "restored": true
+                            },
+                            "max_temperature": {
+                                "value": 27.00,
+                                "restored": true
+                            },
+                            "signal_strength": {
+                                "value": 65,
+                                "restored": true
+                            }
                         },
                         "sensors": {
                             "temperature": undefined,
                             "humidity": undefined,
-                            "signal_strength": undefined
+                            "signal_strength": undefined,
                         },
                         "registered_users": new Set(),
-                        "power_saving_mode": "none"
+                        "power_saving_mode": "none",
                     };
                 }
+                restoreRoom(json.mac_address);
             }
         });
         subscribeTopic(`rms/${json.mac_address}/sensors/#`);
-        subscribeTopic(`rms/${json.mac_address}/room`);
-        subscribeTopic(`rms/${json.mac_address}/thresholds/+`);
         subscribeTopic(`rms/${json.mac_address}/active`);
     } else if (json.status === "disconnected") {
         client.unsubscribe(deviceTopic, (err) => {
             if (err)
                 console.error(err);
-            else {
+            else if (json.mac_address in devices) {
                 console.log(`Unsubscribed from ${deviceTopic}`);
                 devices[json.mac_address].connected = false;
+                devices[json.mac_address].room.restored = false;
+                devices[json.mac_address].thresholds.min_temperature.restored = false;
+                devices[json.mac_address].thresholds.max_temperature.restored = false;
+                devices[json.mac_address].thresholds.signal_strength.restored = false;
             }
         });
     }
+}
+
+function restoreRoom(deviceId) {
+
+    client.publishAsync(`rms/${deviceId}/room/update`, String(devices[deviceId].room.number))
+        .then(() => {
+            subscribeTopic(`rms/${deviceId}/room`);
+            setTimeout(() => {
+                restoreMinTemperatureThreshld(deviceId);
+            }, 100);
+        })
+}
+
+function restoreMinTemperatureThreshld(deviceId) {
+
+    client.publishAsync(`rms/${deviceId}/thresholds/min_temperature/update`, String(devices[deviceId].thresholds.min_temperature.value))
+        .then(() => {
+            subscribeTopic(`rms/${deviceId}/thresholds/min_temperature`);
+            setTimeout(() => {
+                restoreMaxTemperatureThreshld(deviceId);
+            }, 100);
+        })
+}
+
+function restoreMaxTemperatureThreshld(deviceId) {
+
+    client.publishAsync(`rms/${deviceId}/thresholds/max_temperature/update`, String(devices[deviceId].thresholds.max_temperature.value))
+        .then(() => {
+            subscribeTopic(`rms/${deviceId}/thresholds/max_temperature`);
+            setTimeout(() => {
+                restoreSignalStrengthThreshld(deviceId);
+            }, 100);
+        })
+}
+
+function restoreSignalStrengthThreshld(deviceId) {
+
+    client.publishAsync(`rms/${deviceId}/thresholds/signal_strength/update`, String(devices[deviceId].thresholds.signal_strength.value))
+        .then(() => {
+            subscribeTopic(`rms/${deviceId}/thresholds/signal_strength`);
+        })
 }
 
 telegramBot.onText(/\/sensors (.+)/, (msg, regex_matches) => {
@@ -247,7 +309,7 @@ telegramBot.onText(/\/get_room (.+)/, (msg, regex_matches) => {
     let id = regex_matches[1];
     let message;
     if (devices[id])
-        message = `Device ${id} is in room #${devices[id].room}`;
+        message = `Device ${id} is in room #${devices[id].room.number}`;
     else
         message = "Device not found";
     telegramBot.sendMessage(msg.chat.id, message)
@@ -266,7 +328,7 @@ telegramBot.onText(/\/set_room (.+) (\d)/, (msg, regex_matches) => {
             message = "Room out of range";
         else {
             client.publish(`rms/${id}/room/update`, new_value);
-            devices[id].room = new_value;
+            devices[id].room.number = new_value;
             message = `Updated room for ${id}`;
         }
     }
@@ -284,9 +346,9 @@ telegramBot.onText(/\/get_thresholds (.+)/, (msg, regex_matches) => {
     let message;
     if (devices[id]) {
         message = `Device ${id} thresholds:\n\n` +
-                  `- Min temperature: ${devices[id].thresholds.min_temperature} °C\n` +
-                  `- Max temperature: ${devices[id].thresholds.max_temperature} °C\n` +
-                  `- Signal strength: ${devices[id].thresholds.signal_strength} dBm`;
+                  `- Min temperature: ${devices[id].thresholds.min_temperature.value} °C\n` +
+                  `- Max temperature: ${devices[id].thresholds.max_temperature.value} °C\n` +
+                  `- Signal strength: ${devices[id].thresholds.signal_strength.value} dBm`;
     }
     else
         message = "Device not found";
@@ -311,7 +373,7 @@ telegramBot.onText(/\/set_threshold (.+) (min_temperature|max_temperature|signal
                     message = "Low temperature threshold out of range";
                 else {
                     client.publish(`rms/${id}/thresholds/${threshold}/update`, new_value);
-                    devices[id].thresholds.min_temperature = regex_matches[3];
+                    devices[id].thresholds.min_temperature.value = regex_matches[3];
                     message = `Updated min_temperature threshold for device ${id}`;
                 }
                 break;
@@ -320,7 +382,7 @@ telegramBot.onText(/\/set_threshold (.+) (min_temperature|max_temperature|signal
                     message = "High temperature threshold out of range";
                 else {
                     client.publish(`rms/${id}/thresholds/${threshold}/update`, new_value);
-                    devices[id].thresholds.max_temperature = regex_matches[3];
+                    devices[id].thresholds.max_temperature.value = regex_matches[3];
                     message = `Updated max_temperature threshold for device ${id}`;
                 }
                 break;
@@ -329,7 +391,7 @@ telegramBot.onText(/\/set_threshold (.+) (min_temperature|max_temperature|signal
                     message = "Signal strength threshold out of range";
                 else {
                     client.publish(`rms/${id}/thresholds/${threshold}/update`, new_value);
-                    devices[id].thresholds.signal_strength = regex_matches[3];
+                    devices[id].thresholds.signal_strength.value = regex_matches[3];
                     message = `Updated signal_strength threshold for device ${id}`;
                 }
                 break;
