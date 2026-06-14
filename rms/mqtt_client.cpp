@@ -68,6 +68,7 @@ void connectToMqttBroker()
     mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_MAX_TEMP_UPDATE);
     mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_THRESHOLDS_SIGNAL_UPDATE);
     mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_POWER_SAVING_UPDATE);
+    mqttClient.subscribe(mqttMainTopic + MQTT_SUBTOPIC_NIGHT_MODE_CONFIG_UPDATE);
 
     JsonDocument json;
     json["status"] = F("connected");
@@ -84,8 +85,6 @@ void connectToMqttBroker()
 
 void onMqttMessageReceived(String& topic, String& payload)
 {
-    JsonDocument json;
-    deserializeJson(json, payload);
     Serial.println("Received MQTT message: " + topic + " - " + payload);
 
     if (topic.endsWith(MQTT_SUBTOPIC_ROOM_UPDATE))
@@ -100,6 +99,8 @@ void onMqttMessageReceived(String& topic, String& payload)
         mqttUpdateSignalStrengthThreshold(topic, payload);
     else if (topic.endsWith(MQTT_SUBTOPIC_POWER_SAVING_UPDATE))
         mqttUpdatePowerSavingMode(payload);
+    else if (topic.endsWith(MQTT_SUBTOPIC_NIGHT_MODE_CONFIG_UPDATE))
+        mqttUpdateNightModeConfig(payload);
     else
         Serial.println("Ignored");
 }
@@ -284,4 +285,61 @@ void mqttPublishPowerSavingMode()
     }
 
     mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_POWER_SAVING).c_str(), stateString, true, 2);
+}
+
+void mqttUpdateNightModeConfig(String payload)
+{
+    JsonDocument json;
+    deserializeJson(json, payload);
+
+    if (!json.containsKey("startHour") || !json.containsKey("startMinute") || !json.containsKey("endHour") || !json.containsKey("endMinute"))
+    {
+        Serial.println("Missing data");
+        return;
+    }
+    
+    int startHour = json["startHour"];
+    if (startHour < 0 || startHour > 23)
+    {
+        Serial.println("Invalid start hour");
+        return;
+    }
+    
+    int startMinute = json["startMinute"];
+    if (startMinute < 0 || startMinute > 59)
+    {
+        Serial.println("Invalid start minute");
+        return;
+    }
+    
+    int endHour = json["endHour"];
+    if (endHour < 0 || endHour > 23)
+    {
+        Serial.println("Invalid end hour");
+        return;
+    }
+    
+    int endMinute = json["endMinute"];
+    if (endMinute < 0 || endMinute > 59)
+    {
+        Serial.println("Invalid end minute");
+        return;
+    }
+
+    NightModeConfig newConfig = {startHour, startMinute, endHour, endMinute};
+    setNightModeConfig(newConfig);
+    mqttPublishNightModeConfig();
+}
+
+void mqttPublishNightModeConfig()
+{
+    NightModeConfig nightModeConfig = getNightModeConfig();
+    JsonDocument json;
+    json["startHour"] = nightModeConfig.startHour;
+    json["startMinute"] = nightModeConfig.startMinute;
+    json["endHour"] = nightModeConfig.endHour;
+    json["endMinute"] = nightModeConfig.endMinute;
+    char buffer[MQTT_BUFFER_SIZE];
+    size_t length = serializeJson(json, buffer);
+    mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_NIGHT_MODE_CONFIG).c_str(), buffer, length, true, 2);
 }

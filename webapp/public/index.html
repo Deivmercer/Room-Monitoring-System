@@ -76,6 +76,16 @@
             </p>
             <br>
             <button id="update_thresholds">Set</button>
+            <br>
+            <h1>Night mode</h1>
+            <p>
+                Start: <input type="number" id="night_mode_start_hour" min="0" max="23" step="1" value="0"/>:<input type="number" id="night_mode_start_minute" min="0" max="59" step="1" value="0"/>
+            </p>
+            <p>
+                End: <input type="number" id="night_mode_end_hour" min="0" max="23" step="1" value="0"/>:<input type="number" id="night_mode_end_minute" min="0" max="59" step="1" value="0"/>
+            </p>
+            <br>
+            <button id="update_night_mode">Set</button>
         </div>
         <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
         <script src="/javascripts/mqttClient.js"></script>

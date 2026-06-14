@@ -50,6 +50,14 @@ struct RomData
     int8_t signalStrength;
 };
 
+struct NightModeConfig
+{
+    int startHour;
+    int startMinute;
+    int endHour;
+    int endMinute;
+};
+
 void updateState();
 void toggleReadingFlag();
 void readDht();
@@ -78,3 +86,6 @@ void setPaused(bool paused);
 void writeDataToEEPROM(time_t timestamp);
 void readEEPROM();
 void showWeatherInfo();
+void setPowerSavingMode(State mode);
+void setNightModeConfig(NightModeConfig newConfig);
+NightModeConfig getNightModeConfig();

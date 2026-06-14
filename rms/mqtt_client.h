@@ -22,6 +22,8 @@
 #define MQTT_SUBTOPIC_ALARMS_SIGNAL "/alarms/signal_strength"
 #define MQTT_SUBTOPIC_POWER_SAVING "/power_saving_mode"
 #define MQTT_SUBTOPIC_POWER_SAVING_UPDATE "/power_saving_mode/update"
+#define MQTT_SUBTOPIC_NIGHT_MODE_CONFIG "/night_mode_config"
+#define MQTT_SUBTOPIC_NIGHT_MODE_CONFIG_UPDATE "/night_mode_config/update"
 
 void setupMqtt(bool firstSetup);
 void loopMqttClient();
@@ -42,5 +44,7 @@ void mqttPublishAlarm(const char* topic, String message);
 void mqttFirstSetup();
 void mqttUpdatePowerSavingMode(String mode);
 void mqttPublishPowerSavingMode();
+void mqttUpdateNightModeConfig(String payload);
+void mqttPublishNightModeConfig();
 
 #endif // RMS_MQTT_CLIENT_H

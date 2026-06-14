@@ -34,9 +34,11 @@ float lastHumidity = 0;
 float lastTemperature = 0;
 int lastSignalStrength = 0;
 int savedData = 0;
+NightModeConfig nightModeConfig = {-1, -1, -1, -1};
 
 void setup()
 {
+    Serial.begin(115200);
     dht.begin();
 
     // Initializing the LCD display
@@ -84,8 +86,6 @@ void setup()
 
     // Init EEPROM
     EEPROM.begin(512);
-
-    Serial.begin(115200);
 }
 
 void loop()
@@ -113,6 +113,7 @@ void loop()
             writeReadingsToDB(lastTemperature, lastHumidity, lastSignalStrength, -1);
             updateData = false;
             state = WEATHER;
+            checkStartNightMode();
             break;
         case WEATHER:
             if (!updateData)
@@ -123,6 +124,7 @@ void loop()
             writeReadingsToDB(lastTemperature, lastHumidity, lastSignalStrength, -1);
             updateData = false;
             state = NORMAL;
+            checkStartNightMode();
             break;
         case NIGHT_MODE:
             if (!updateData)
@@ -131,6 +133,7 @@ void loop()
             readDht();
             readSignalStrength();
             writeDataToEEPROM(now);
+            checkEndNightMode();
             updateData = false;
             break;
         case CONFIG_LOW_TEMPERATURE:
@@ -153,7 +156,7 @@ void loop()
             Serial.println(F("ERROR: Unknown state"));
     }
 
-    if (state == NIGHT_MODE)
+    if (state == NIGHT_MODE || state == NIGHT_MODE_RESTORE)
         return;
 
     loopWebserver();
@@ -565,4 +568,45 @@ void setPowerSavingMode(State mode)
 
     mqttPublishPowerSavingMode();
     updateState();
+}
+
+void checkStartNightMode()
+{
+    if (nightModeConfig.startHour == -1 || nightModeConfig.startMinute == -1 || nightModeConfig.endHour == -1 || nightModeConfig.endMinute == -1)
+        return;
+
+    time_t now = time(nullptr);
+    struct tm* timeinfo = localtime(&now);
+    int hour   = timeinfo->tm_hour;
+    int minute = timeinfo->tm_min;
+
+    if (hour != nightModeConfig.startHour || minute != nightModeConfig.startMinute)
+        return;
+
+    state = NIGHT_MODE;
+    updateState();
+}
+
+void checkEndNightMode()
+{
+    time_t now = time(nullptr);
+    struct tm* timeinfo = localtime(&now);
+    int hour   = timeinfo->tm_hour;
+    int minute = timeinfo->tm_min;
+
+    if (hour < nightModeConfig.endHour || (hour == nightModeConfig.endHour && minute < nightModeConfig.endMinute))
+        return;
+
+    state = NIGHT_MODE_RESTORE;
+    updateState();
+}
+
+void setNightModeConfig(NightModeConfig newConfig)
+{
+    nightModeConfig = newConfig;
+}
+
+NightModeConfig getNightModeConfig()
+{
+    return nightModeConfig;
 }

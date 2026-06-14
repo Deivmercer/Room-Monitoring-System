@@ -8,6 +8,7 @@ const MQTT_SUBTOPIC_THRESHOLDS = "/thresholds/+"
 const MQTT_SUBTOPIC_THRESHOLDS_ACKS = "/thresholds/+/update/ack"
 const MQTT_SUBTOPIC_ROOM_ACKS = "/room/update/ack"
 const MQTT_SUBTOPIC_POWER_SAVING_MODES = "/power_saving_mode"
+const MQTT_SUBTOPIC_NIGHT_MODE_CONFIG = "/night_mode_config"
 let client;
 
 function mqttConnect(clientId, username, password, callback) {
@@ -123,6 +124,27 @@ function publishThresholds() {
 function setAwayMode() {
 
     let deviceId = devices[currentRoom];
-    client.publish(`rms/${deviceId}/power_saving_mode/update`, "away");
+    client.publish(`rms/${deviceId}${MQTT_SUBTOPIC_POWER_SAVING_MODES}/update`, "away");
     awayButton.disabled = true;
+}
+
+function publishNightModeConfig() {
+
+    let deviceId = devices[currentRoom];
+    let date = new Date();
+
+    date.setHours(nightModeStartHour.value, nightModeStartMinute.value, 0, 0);
+    let startHour = date.getUTCHours();
+    let startMinute = date.getUTCMinutes();
+
+    date.setHours(nightModeEndHour.value, nightModeEndMinute.value, 0, 0);
+    let endHour = date.getUTCHours();
+    let endMinute = date.getUTCMinutes();
+
+    client.publish(`rms/${deviceId}${MQTT_SUBTOPIC_NIGHT_MODE_CONFIG}/update`, JSON.stringify({
+        "startHour": startHour,
+        "startMinute": startMinute,
+        "endHour": endHour,
+        "endMinute": endMinute
+    }));
 }

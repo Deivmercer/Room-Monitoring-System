@@ -18,6 +18,7 @@ void setupWebserver()
     server.on("/change_room", handleChangeRoom);
     server.on("/wot", handleWot);
     server.on("/away", handleAway);
+    server.on("/set_night_mode", handleSetNightMode);
     server.onNotFound(handleNotFound);
     server.begin();
 }
@@ -39,7 +40,7 @@ void handleRoot()
     int lowTemperatureThreshold = getLowTemperatureThreshold();
     int highTemperatureThreshold = getHighTemperatureThreshold();
     int signalStrengthThreshold = getSignalStrengthThreshold();
-
+    NightModeConfig nightModeConfig = getNightModeConfig();
 
     String html = F(
         "<!DOCTYPE html>\n"
@@ -122,6 +123,21 @@ void handleRoot()
                     "<p>\n"
                         "<label for='signal_strength'>Signal stength: </label>\n");
     html += F(          "<input type='number' id='signal_strength' name='signal_strength' step='1' min='") + String(SIGNAL_STRENGTH_THRESHOLD_MAX) + F("' max='") + String(SIGNAL_STRENGTH_THRESHOLD_MIN) + F("' value='") + String(signalStrengthThreshold) + F("'/>\n");
+    html += F(      "</p>\n"
+                    "<br>\n"
+                    "<input class='button' type='submit' value='Set'/>\n"
+                "</form>\n"
+                "<h1>Night mode:</h1>\n"
+                "<form action='/set_night_mode' method='post'>\n"
+                    "<p>\n"
+                        "Start");
+    html += F(          "<input type='number' id='start_hour' name='start_hour' min='0' max='23' step='1' value='") + String(nightModeConfig.startHour) + F("'/>:");
+    html += F(          "<input type='number' id='start_minute' name='start_minute' min='0' max='59' step='1' value='") + String(nightModeConfig.startMinute) + F("'/>\n");
+    html += F(      "</p>\n"
+                    "<p>\n"
+                        "End");
+    html += F(          "<input type='number' id='end_hour' name='end_hour' min='0' max='23' step='1' value='") + String(nightModeConfig.endHour) + F("'/>:");
+    html += F(          "<input type='number' id='end_minute' name='end_minute' min='0' max='59' step='1' value='") + String(nightModeConfig.endMinute) + F("'/>\n");
     html += F(      "</p>\n"
                     "<br>\n"
                     "<input class='button' type='submit' value='Set'/>\n"
@@ -231,6 +247,55 @@ void handleAway()
 {
     server.send(200);
     setPowerSavingMode(AWAY_MODE);
+}
+
+void handleSetNightMode()
+{
+    if (server.method() != HTTP_POST)
+    {
+        server.send(405, F("text/html"), getErrorPage(F("Method not allowed")));
+        return;
+    }
+    if (!server.hasArg(F("start_hour")) || !server.hasArg(F("start_minute")) || !server.hasArg(F("end_hour")) || !server.hasArg(F("end_minute")))
+    {
+        server.send(400, F("text/html"), getErrorPage(F("Missing arguments")));
+        return;
+    }
+
+    int newStartHour = server.arg(F("start_hour")).toInt();
+    if (newStartHour < 0 || newStartHour > 23)
+    {
+        server.send(400, F("text/html"), getErrorPage(F("Start hour out of range")));
+        return;
+    }
+
+    int newStartMinute = server.arg(F("start_minute")).toInt();
+    if (newStartMinute < 0 || newStartMinute > 59)
+    {
+        server.send(400, F("text/html"), getErrorPage(F("Start minute out of range")));
+        return;
+    }
+
+    int newEndHour = server.arg(F("end_hour")).toInt();
+    if (newEndHour < 0 || newEndHour > 23)
+    {
+        server.send(400, F("text/html"), getErrorPage(F("End hour out of range")));
+        return;
+    }
+
+    int newEndMinute = server.arg(F("end_minute")).toInt();
+    if (newEndMinute < 0 || newEndMinute > 59)
+    {
+        server.send(400, F("text/html"), getErrorPage(F("End minute out of range")));
+        return;
+    }
+
+    NightModeConfig newConfig = {newStartHour, newStartMinute, newEndHour, newEndMinute};
+    setNightModeConfig(newConfig);
+
+    server.sendHeader("Location", String("http://") + server.client().localIP().toString(), true);
+    server.send(301);
+    mqttPublishNightModeConfig();
 }
 
 void handleWot()

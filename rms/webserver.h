@@ -11,6 +11,7 @@ void handlePause();
 void handleResume();
 void handleWot();
 void handleAway();
+void handleSetNightMode();
 String getErrorPage(String errorMessage);
 
 #endif // RMS_WEBSERVER_H
