@@ -181,7 +181,7 @@ function handleMqttDevice(message) {
                                 "restored": true
                             },
                             "signal_strength": {
-                                "value": 65,
+                                "value": -65,
                                 "restored": true
                             }
                         },
