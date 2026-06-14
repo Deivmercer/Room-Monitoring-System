@@ -117,6 +117,17 @@ client.on("message", (topic, message) => {
         }
         else
             console.log(`Device ${id} has no registered users; ignoring alarm.`);
+    } else if (topic.endsWith("/night_mode_config")){
+        let newConfig = JSON.parse(message);
+        if (!devices[id].night_mode.restored) {
+            restoreValue = true;
+            devices[id].restored = true;
+        }
+
+        devices[id].night_mode.start_hour = newConfig.startHour;
+        devices[id].night_mode.start_minute = newConfig.startMinute;
+        devices[id].night_mode.end_hour = newConfig.endHour;
+        devices[id].night_mode.end_minute = newConfig.endMinute;
     }
 
     // if (restoreValue)
@@ -181,6 +192,13 @@ function handleMqttDevice(message) {
                         },
                         "registered_users": new Set(),
                         "power_saving_mode": "none",
+                        "night_mode": {
+                            "start_hour": -1,
+                            "start_minute": -1,
+                            "end_hour": -1,
+                            "end_minute": -1,
+                            "restored": true
+                        },
                     };
                 }
                 restoreRoom(json.mac_address);
@@ -199,6 +217,7 @@ function handleMqttDevice(message) {
                 devices[json.mac_address].thresholds.min_temperature.restored = false;
                 devices[json.mac_address].thresholds.max_temperature.restored = false;
                 devices[json.mac_address].thresholds.signal_strength.restored = false;
+                devices[json.mac_address].night_mode.restored = false;
             }
         });
     }
@@ -242,7 +261,22 @@ function restoreSignalStrengthThreshld(deviceId) {
     client.publishAsync(`rms/${deviceId}/thresholds/signal_strength/update`, String(devices[deviceId].thresholds.signal_strength.value))
         .then(() => {
             subscribeTopic(`rms/${deviceId}/thresholds/signal_strength`);
+            setTimeout(() => {
+                restoreNightModeConfig(deviceId);
+            }, 100);
         })
+}
+
+function restoreNightModeConfig(deviceId) {
+
+    client.publishAsync(`rms/${deviceId}/night_mode_config/update`, JSON.stringify({
+        "startHour": devices[deviceId].night_mode.start_hour,
+        "startMinute": devices[deviceId].night_mode.start_minute,
+        "endHour": devices[deviceId].night_mode.end_hour,
+        "endMinute": devices[deviceId].night_mode.end_minute
+    })).then(() => {
+        subscribeTopic(`rms/${deviceId}/night_mode_config`);
+    })
 }
 
 telegramBot.onText(/\/sensors (.+)/, (msg, regex_matches) => {

@@ -65,8 +65,10 @@ function mqttConnect(clientId, username, password, callback) {
             onDeviceActiveReceived(message.toString(), deviceId);
         else if (topic.includes("/alarms/"))
             onAlarmReceived(deviceId);
-        else if (topic.endsWith("power_saving_mode"))
+        else if (topic.endsWith(MQTT_SUBTOPIC_POWER_SAVING_MODES))
             onPowerSavingModeUpdated(message.toString(), deviceId);
+        else if (topic.endsWith(MQTT_SUBTOPIC_NIGHT_MODE_CONFIG))
+            onNightModeConfigUpdate(message, deviceId);
         else
             console.log("Unknown topic: " + topic);
     });
@@ -83,6 +85,7 @@ function mqttSubscribeDevice(device) {
     subscribeTopic(mainTopic + MQTT_SUBTOPIC_THRESHOLDS_ACKS);
     subscribeTopic(mainTopic + MQTT_SUBTOPIC_ROOM_ACKS);
     subscribeTopic(mainTopic + MQTT_SUBTOPIC_POWER_SAVING_MODES);
+    subscribeTopic(mainTopic + MQTT_SUBTOPIC_NIGHT_MODE_CONFIG);
 }
 
 function subscribeTopic(topic) {

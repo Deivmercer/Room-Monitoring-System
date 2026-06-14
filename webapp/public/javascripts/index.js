@@ -49,6 +49,12 @@ let lastTemperatureValues = [null, null, null, null, null, null, null, null, nul
 let lastHumidityValues = [null, null, null, null, null, null, null, null, null];
 let lastSignalStrengthValues = [null, null, null, null, null, null, null, null, null];
 let powerSavingModes = ["none", "none", "none", "none", "none", "none", "none", "none", "none"];
+let nightModeConfigs = Array.from({ length: 10 }, () => ({
+    startHour: -1,
+    startMinute: -1,
+    endHour: -1,
+    endMinute: -1,
+}));
 
 const roomButtons = document.querySelectorAll(".room");
 for (let room of roomButtons) {
@@ -167,6 +173,10 @@ function onRoomUpdated(newRoom, deviceId) {
         minTemperatureThreshold[newRoom - 1] = minTemperatureThreshold[previousRoom];
         maxTemperatureThreshold[newRoom - 1] = maxTemperatureThreshold[previousRoom];
         signalStrengthThreshold[newRoom - 1] = signalStrengthThreshold[previousRoom];
+        nightModeConfigs[newRoom - 1].startHour = nightModeConfigs[currentRoom].startHour;
+        nightModeConfigs[newRoom - 1].startMinute = nightModeConfigs[currentRoom].startMinute;
+        nightModeConfigs[newRoom - 1].endHour = nightModeConfigs[currentRoom].endHour;
+        nightModeConfigs[newRoom - 1].endMinute = nightModeConfigs[currentRoom].endMinute;
         if (previousRoom === currentRoom && Number(newRoom) - 1 !== previousRoom)
             deviceStatus.innerText = "not connected";
     }
@@ -228,6 +238,11 @@ function changeRoom(room) {
     powerSavingMode.innerText = powerSavingModes[currentRoom];
 
     awayButton.disabled = powerSavingModes[currentRoom] !== "none";
+
+    nightModeStartHour.value = nightModeConfigs[currentRoom].startHour;
+    nightModeStartMinute.value = nightModeConfigs[currentRoom].startMinute;
+    nightModeEndHour.value = nightModeConfigs[currentRoom].endHour;
+    nightModeEndMinute.value = nightModeConfigs[currentRoom].endMinute;
 }
 
 function onDeviceDisconnected(deviceId) {
@@ -265,3 +280,18 @@ function onPowerSavingModeUpdated(mode, deviceId) {
     awayButton.disabled = mode !== "none";
 }
 
+function onNightModeConfigUpdate(config, deviceId) {
+
+    console.log("test");
+    let room = devices.indexOf(deviceId);
+    let newConfig = JSON.parse(config);
+    nightModeConfigs[room] = JSON.parse(config);
+
+    if (room !== currentRoom)
+        return;
+
+    nightModeStartHour.value = newConfig.startHour;
+    nightModeStartMinute.value = newConfig.startMinute;
+    nightModeEndHour.value = newConfig.endHour;
+    nightModeEndMinute.value = newConfig.endMinute;
+}
