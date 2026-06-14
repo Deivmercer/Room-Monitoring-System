@@ -328,8 +328,11 @@ telegramBot.onText(/\/devices/, (msg) => {
     let message;
     if (Object.keys(devices).length > 0) {
         message = "Available devices:\n";
-        for (let device of Object.keys(devices))
+        for (let device of Object.keys(devices)) {
+            if (!devices[device].connected)
+                continue;
             message += "- " + device + "\n";
+        }
     } else
         message = "No device found";
     telegramBot.sendMessage(msg.chat.id, message)
