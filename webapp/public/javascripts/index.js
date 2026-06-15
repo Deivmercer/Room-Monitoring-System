@@ -282,16 +282,25 @@ function onPowerSavingModeUpdated(mode, deviceId) {
 
 function onNightModeConfigUpdate(config, deviceId) {
 
-    console.log("test");
     let room = devices.indexOf(deviceId);
     let newConfig = JSON.parse(config);
-    nightModeConfigs[room] = JSON.parse(config);
+    let startTime = new Date();
+    startTime.setUTCHours(newConfig.startHour, newConfig.startMinute, 0, 0);
+    let endTime = new Date();
+    endTime.setUTCHours(newConfig.endHour, newConfig.endMinute, 0, 0);
+    let localTimeConfig = {
+        "startHour": startTime.getHours(),
+        "startMinute": startTime.getMinutes(),
+        "endHour": endTime.getHours(),
+        "endMinute": endTime.getMinutes()
+    }
+    nightModeConfigs[room] = localTimeConfig;
 
     if (room !== currentRoom)
         return;
 
-    nightModeStartHour.value = newConfig.startHour;
-    nightModeStartMinute.value = newConfig.startMinute;
-    nightModeEndHour.value = newConfig.endHour;
-    nightModeEndMinute.value = newConfig.endMinute;
+    nightModeStartHour.value = localTimeConfig.startHour;
+    nightModeStartMinute.value = localTimeConfig.startMinute;
+    nightModeEndHour.value = localTimeConfig.endHour;
+    nightModeEndMinute.value = localTimeConfig.endMinute;
 }
