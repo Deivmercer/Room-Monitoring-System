@@ -127,7 +127,18 @@ void handleRoot()
                     "<br>\n"
                     "<input class='button' type='submit' value='Set'/>\n"
                 "</form>\n"
-                "<h1>Night mode:</h1>\n"
+                "<h1>Night mode:</h1>\n");
+
+    if (nightModeConfig.startHour == -1 || nightModeConfig.startMinute == -1 || nightModeConfig.endHour == -1 || nightModeConfig.endMinute == -1)
+    {
+        html += F(
+                "<div>\n"
+                    "<p style='color: #e81a1a'>Night mode not configured</p>\n"
+                    "<br>\n"
+                "</div>\n");
+    }
+
+    html += F(  "<p>Note: device timezone is UTC</p>\n"
                 "<form action='/set_night_mode' method='post'>\n"
                     "<p>\n"
                         "Start");

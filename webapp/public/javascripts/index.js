@@ -25,6 +25,7 @@ const nightModeStartHour = document.getElementById("night_mode_start_hour");
 const nightModeStartMinute = document.getElementById("night_mode_start_minute");
 const nightModeEndHour = document.getElementById("night_mode_end_hour");
 const nightModeEndMinute = document.getElementById("night_mode_end_minute");
+const nightModeNotSet = document.getElementById("night_mode_not_set");
 document.getElementById("login_button").addEventListener("click", login);
 document.getElementById("update_room").addEventListener("click", publishRoomNumber);
 document.getElementById("update_thresholds").addEventListener("click", publishThresholds);
@@ -243,6 +244,12 @@ function changeRoom(room) {
     nightModeStartMinute.value = nightModeConfigs[currentRoom].startMinute;
     nightModeEndHour.value = nightModeConfigs[currentRoom].endHour;
     nightModeEndMinute.value = nightModeConfigs[currentRoom].endMinute;
+
+    if (nightModeConfigs[currentRoom].startHour === -1 || nightModeConfigs[currentRoom].startMinute === -1 ||
+        nightModeConfigs[currentRoom].endHour === -1 || nightModeConfigs[currentRoom].endMinute === -1)
+        nightModeNotSet.style.display = "block";
+    else
+        nightModeNotSet.style.display = "none";
 }
 
 function onDeviceDisconnected(deviceId) {
@@ -284,16 +291,26 @@ function onNightModeConfigUpdate(config, deviceId) {
 
     let room = devices.indexOf(deviceId);
     let newConfig = JSON.parse(config);
-    let startTime = new Date();
-    startTime.setUTCHours(newConfig.startHour, newConfig.startMinute, 0, 0);
-    let endTime = new Date();
-    endTime.setUTCHours(newConfig.endHour, newConfig.endMinute, 0, 0);
-    let localTimeConfig = {
-        "startHour": startTime.getHours(),
-        "startMinute": startTime.getMinutes(),
-        "endHour": endTime.getHours(),
-        "endMinute": endTime.getMinutes()
+
+    let localTimeConfig;
+    if (newConfig.startHour === -1 || newConfig.startMinute === -1 || newConfig.endHour === -1 || newConfig.endMinute === -1) {
+        nightModeNotSet.style.display = "block";
+        localTimeConfig = newConfig;
     }
+    else {
+        nightModeNotSet.style.display = "none";
+        let startTime = new Date();
+        startTime.setUTCHours(newConfig.startHour, newConfig.startMinute, 0, 0);
+        let endTime = new Date();
+        endTime.setUTCHours(newConfig.endHour, newConfig.endMinute, 0, 0);
+        localTimeConfig = {
+            "startHour": startTime.getHours(),
+            "startMinute": startTime.getMinutes(),
+            "endHour": endTime.getHours(),
+            "endMinute": endTime.getMinutes()
+        }
+    }
+
     nightModeConfigs[room] = localTimeConfig;
 
     if (room !== currentRoom)
