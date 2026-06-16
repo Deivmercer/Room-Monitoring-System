@@ -168,6 +168,7 @@ void updateState()
     switch (state)
     {
         case NORMAL:
+        case WEATHER:
             state = CONFIG_LOW_TEMPERATURE;
             digitalWrite(SIGNAL_STRENGTH_LED, HIGH);
             lcd.clear();
