@@ -17,6 +17,9 @@ void setupMqtt()
     // Setup MQTT
     mqttClient.begin(MQTT_BROKER_IP, 1883, networkClient);
     mqttClient.onMessage(onMqttMessageReceived);
+
+    mqttPublishDeviceActive();
+    mqttPublishPowerSavingMode();
 }
 
 void loopMqttClient()
@@ -91,9 +94,9 @@ void onMqttMessageReceived(String& topic, String& payload)
     else if (topic.endsWith(MQTT_SUBTOPIC_THRESHOLDS_SIGNAL_UPDATE))
         mqttUpdateSignalStrengthThreshold(topic, payload);
     else if (topic.endsWith(MQTT_SUBTOPIC_POWER_SAVING_UPDATE))
-        mqttUpdatePowerSavingMode(payload);
+        mqttUpdatePowerSavingMode(topic, payload);
     else if (topic.endsWith(MQTT_SUBTOPIC_NIGHT_MODE_CONFIG_UPDATE))
-        mqttUpdateNightModeConfig(payload);
+        mqttUpdateNightModeConfig(topic, payload);
     else
         Serial.println("Ignored");
 }
@@ -223,7 +226,7 @@ void mqttPublishAlarm(const char* topic, String message)
     mqttClient.publish((mqttMainTopic + topic).c_str(), message, false, 0);
 }
 
-void mqttUpdatePowerSavingMode(String mode)
+void mqttUpdatePowerSavingMode(String topic, String mode)
 {
     State newState;
     if (mode == F("normal"))
@@ -234,10 +237,11 @@ void mqttUpdatePowerSavingMode(String mode)
         newState = NIGHT_MODE;
     else
     {
-        Serial.print("Unrecognized mode ");
-        Serial.println(mode);
+        mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("Unrecognized mode"));
+        return;
     }
 
+    mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("ok"), "");
     setPowerSavingMode(newState);
 }
 
@@ -264,54 +268,57 @@ void mqttPublishPowerSavingMode()
             stateString = F("night");
             break;
         default:
-            Serial.print("Unrecognizeda mode ");
+            Serial.print("Unrecognized mode ");
             Serial.println(state);
+            return;
     }
 
     mqttClient.publish((mqttMainTopic + MQTT_SUBTOPIC_POWER_SAVING).c_str(), stateString, true, 2);
 }
 
-void mqttUpdateNightModeConfig(String payload)
+void mqttUpdateNightModeConfig(String topic, String payload)
 {
     JsonDocument json;
     deserializeJson(json, payload);
 
     if (!json.containsKey("startHour") || !json.containsKey("startMinute") || !json.containsKey("endHour") || !json.containsKey("endMinute"))
     {
-        Serial.println("Missing data");
+        mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("Missing data"));
         return;
     }
     
     int startHour = json["startHour"];
     if (startHour < 0 || startHour > 23)
     {
-        Serial.println("Invalid start hour");
+        mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("Invalid start hour"));
         return;
     }
     
     int startMinute = json["startMinute"];
     if (startMinute < 0 || startMinute > 59)
     {
-        Serial.println("Invalid start minute");
+        mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("Invalid start minute"));
         return;
     }
     
     int endHour = json["endHour"];
     if (endHour < 0 || endHour > 23)
     {
-        Serial.println("Invalid end hour");
+        mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("Invalid end hour"));
         return;
     }
     
     int endMinute = json["endMinute"];
     if (endMinute < 0 || endMinute > 59)
     {
-        Serial.println("Invalid end minute");
+        mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("error"), F("Invalid end minute"));
         return;
     }
 
     NightModeConfig newConfig = {startHour, startMinute, endHour, endMinute};
     setNightModeConfig(newConfig);
+
+    mqttPublishRequestResult((topic + MQTT_SUBTOPIC_ACK).c_str(), F("ok"), "");
     mqttPublishNightModeConfig();
 }
 

@@ -42,9 +42,9 @@ void mqttUpdateSignalStrengthThreshold(String topic, String threshold);
 void mqttPublishThresholds();
 void mqttPublishAlarm(const char* topic, String message);
 void mqttFirstSetup();
-void mqttUpdatePowerSavingMode(String mode);
+void mqttUpdatePowerSavingMode(String topic, String mode);
 void mqttPublishPowerSavingMode();
-void mqttUpdateNightModeConfig(String payload);
+void mqttUpdateNightModeConfig(String topic, String payload);
 void mqttPublishNightModeConfig();
 
 #endif // RMS_MQTT_CLIENT_H
