@@ -133,6 +133,14 @@ function setAwayMode() {
 
 function publishNightModeConfig() {
 
+    if (nightModeStartHour.value < 0 || nightModeStartHour.value > 23 ||
+        nightModeStartMinute.value < 0 || nightModeStartMinute.value > 59 ||
+        nightModeEndHour.value < 0 || nightModeEndHour.value > 23 ||
+        nightModeEndMinute.value < 0 || nightModeEndMinute.value > 59) {
+        alert("Invalid night mode configuration")
+        return;
+    }
+
     let deviceId = devices[currentRoom];
     let date = new Date();
 
