@@ -218,6 +218,7 @@ void updateState()
             exitSleep();
             readEEPROM();
             state = NORMAL;
+            mqttPublishPowerSavingMode();
             updateDataTicker.detach();
             updateDataTicker.attach(5.0, toggleReadingFlag);
             break;
@@ -585,6 +586,7 @@ void checkStartNightMode()
         return;
 
     state = NIGHT_MODE;
+    mqttPublishPowerSavingMode();
     updateState();
 }
 
