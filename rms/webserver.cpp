@@ -37,8 +37,8 @@ void handleRoot()
     int lastTemperature = getLastTemperature();
     int lastHumidity = getLastHumidity();
     int lastSignalStrength = getLastSignalStrength();
-    int lowTemperatureThreshold = getLowTemperatureThreshold();
-    int highTemperatureThreshold = getHighTemperatureThreshold();
+    float lowTemperatureThreshold = getLowTemperatureThreshold();
+    float highTemperatureThreshold = getHighTemperatureThreshold();
     int signalStrengthThreshold = getSignalStrengthThreshold();
     NightModeConfig nightModeConfig = getNightModeConfig();
 
