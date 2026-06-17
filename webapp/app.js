@@ -33,6 +33,36 @@ app.get("/devices", (req, res) => {
     res.set("ETag", "").send(ids);
 });
 
+app.get("/wot", (req, res) => {
+    res.send({
+        "@context": "https://www.w3.org/2019/wot/td/v1.1",
+        "title": "Room Monitoring System",
+        "id": "davemercer.moe",
+        "properties": {
+            "home": {
+                "description": "The homepage of the master node",
+                "readOnly": true,
+                "forms": [
+                    {
+                        "href": "https://davemercer.moe/",
+                        "contentType": "text/html"
+                    }
+                ]
+            },
+            "devices": {
+                "description": "The list of devices currently connected to the master node",
+                "readOnly": true,
+                "forms": [
+                    {
+                        "href": "https://davemercer.moe/devices",
+                        "contentType": "application/json"
+                    }
+                ]
+            },
+        }
+    });
+});
+
 app.use((req, res) => {
     res.redirect("/");
 })
