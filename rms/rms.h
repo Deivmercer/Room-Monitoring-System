@@ -28,6 +28,9 @@
 #define WEATHER_DEFAULT_COUNTRY "it" // ISO3166 country code 
 #define WEATHER_DEFAULT_CITY "Milano"
 
+#define DEFAULT_SENSOR_TIMER 5.0
+#define NIGHT_MODE_TIMER 1800.0
+
 enum State
 {
     NORMAL,

@@ -58,7 +58,7 @@ void setup()
     setupWifi();
 
     // Initializing ticker
-    updateDataTicker.attach(5.0, toggleReadingFlag);
+    updateDataTicker.attach(DEFAULT_SENSOR_TIMER, toggleReadingFlag);
 
     // Setting pins
     pinMode(SIGNAL_STRENGTH_LED, OUTPUT);
@@ -210,7 +210,7 @@ void updateState()
             lcd.clear();
             lcd.setBacklight(0);
             updateDataTicker.detach();
-            updateDataTicker.attach(60.0, toggleReadingFlag);
+            updateDataTicker.attach(NIGHT_MODE_TIMER, toggleReadingFlag);
             break;
         case NIGHT_MODE_RESTORE:
             lcd.setBacklight(255);
@@ -220,7 +220,7 @@ void updateState()
             state = NORMAL;
             mqttPublishPowerSavingMode();
             updateDataTicker.detach();
-            updateDataTicker.attach(5.0, toggleReadingFlag);
+            updateDataTicker.attach(DEFAULT_SENSOR_TIMER, toggleReadingFlag);
             break;
         case AWAY_MODE:
             digitalWrite(HIGH_TEMPERATURE_LED, LOW);
@@ -592,6 +592,9 @@ void checkStartNightMode()
 
 void checkEndNightMode()
 {
+    if (nightModeConfig.startHour == -1 || nightModeConfig.startMinute == -1 || nightModeConfig.endHour == -1 || nightModeConfig.endMinute == -1)
+        return;
+
     time_t now = time(nullptr);
     struct tm* timeinfo = localtime(&now);
     int hour   = timeinfo->tm_hour;
