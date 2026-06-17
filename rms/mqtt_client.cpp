@@ -229,8 +229,8 @@ void mqttPublishAlarm(const char* topic, String message)
 void mqttUpdatePowerSavingMode(String topic, String mode)
 {
     State newState;
-    if (mode == F("normal"))
-        newState = NORMAL;
+    if (mode == F("none"))
+        newState = getState();
     else if (mode == "away")
         newState = AWAY_MODE;
     else if (mode == "night")
