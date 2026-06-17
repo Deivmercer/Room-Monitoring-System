@@ -15,7 +15,8 @@ This project implements an IoT monitoring system designed to collect environment
 
 - NodeMCU ESP8266
 - Temperature and humidity sensor (DHT11)
-- Button (KY-004)
+- 2x Button (KY-004)
+- 10kΩ resistor
 - Linear potentiometer (KY-040)
 - Display (LCD1602A)
 - Yellow led
